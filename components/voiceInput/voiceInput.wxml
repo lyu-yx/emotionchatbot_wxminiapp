@@ -1,0 +1,74 @@
+<!--语音输入组件模板-->
+<view class="voice-input-overlay" wx:if="{{show}}" catchtouchmove="true">
+  <view class="voice-input-container">
+    <!-- 标题栏 -->
+    <view class="voice-header">
+      <text class="voice-title">语音输入</text>
+      <text class="voice-close" bindtap="closeComponent">×</text>
+    </view>
+
+    <!-- 录音状态显示 -->
+    <view class="voice-content">
+      <!-- 录音动画区域 -->
+      <view class="voice-animation">
+        <view class="wave-container" wx:if="{{isRecording}}">
+          <view class="wave wave1"></view>
+          <view class="wave wave2"></view>
+          <view class="wave wave3"></view>
+        </view>
+        <view class="microphone-icon {{isRecording ? 'recording' : ''}}">
+          <text class="icon">🎤</text>
+        </view>
+      </view>      <!-- 状态文本 -->
+      <view class="voice-status">
+        <text wx:if="{{!isRecording && !isProcessing}}" class="status-text">点击开始录音</text>
+        <text wx:if="{{isRecording}}" class="status-text recording">
+          正在录音... {{formattedRecordTime}}
+        </text>
+        <text wx:if="{{isProcessing}}" class="status-text processing">语音识别中...</text>
+      </view>
+
+      <!-- 录音时长进度条 -->
+      <view class="progress-container" wx:if="{{isRecording}}">
+        <view class="progress-bar">
+          <view class="progress-fill" style="width: {{(recordTime / maxDuration) * 100}}%"></view>
+        </view>
+        <text class="progress-text">{{formattedRecordTime}} / {{formattedMaxDuration}}</text>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="voice-actions">
+      <button 
+        wx:if="{{!isRecording && !isProcessing}}" 
+        class="record-btn start"
+        bindtap="startRecording"
+      >
+        开始录音
+      </button>
+
+      <button 
+        wx:if="{{isRecording}}" 
+        class="record-btn stop"
+        bindtap="stopRecording"
+      >
+        停止录音
+      </button>
+
+      <button 
+        wx:if="{{isRecording || isProcessing}}" 
+        class="record-btn cancel"
+        bindtap="cancelRecording"
+      >
+        取消
+      </button>
+    </view>
+
+    <!-- 使用提示 -->
+    <view class="voice-tips">
+      <text class="tip-text">• 点击开始录音按钮开始</text>
+      <text class="tip-text">• 录音完成后自动识别</text>
+      <text class="tip-text">• 最长录音时间 {{maxDuration}} 秒</text>
+    </view>
+  </view>
+</view>
