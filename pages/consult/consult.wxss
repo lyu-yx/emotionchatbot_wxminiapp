@@ -1,0 +1,721 @@
+/* ChatGPT 式聊天界面样式 */
+
+/* 整体容器 */
+.chat-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+}
+
+/* 头部区域 */
+.chat-header {
+  background: linear-gradient(135deg, #1aad19, #00d26a);
+  color: #ffffff;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(26, 173, 25, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.doctor-name {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.status-text {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+}
+
+.progress-text {
+  font-size: 14px;
+  font-weight: bold;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+/* 消息区域 */
+.chat-messages {
+  flex: 1;
+  padding: 20px 15px;
+  background-color: #f8f9fa;
+}
+
+.message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.message-item {
+  display: flex;
+  width: 100%;
+}
+
+.message-item.system {
+  justify-content: flex-start; /* 系统消息左对齐 */
+}
+
+.message-item.user {
+  justify-content: flex-end; /* 用户消息右对齐 */
+}
+
+/* 消息气泡 */
+.message-bubble {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 80%;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 系统消息（左侧，绿色） */
+.system-bubble {
+  align-self: flex-start;
+}
+
+.system-bubble .bubble-content {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px 18px 18px 6px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.system-bubble .bubble-content::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  bottom: 6px;
+  width: 0;
+  height: 0;
+  border-right: 6px solid #ffffff;
+  border-bottom: 6px solid transparent;
+  border-top: 6px solid transparent;
+}
+
+/* 用户消息（右侧，蓝色） */
+.user-bubble {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.user-bubble .bubble-content {
+  background: linear-gradient(135deg, #007aff, #5856d6);
+  color: #ffffff;
+  border-radius: 18px 18px 6px 18px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+  position: relative;
+}
+
+.user-bubble .bubble-content::before {
+  content: '';
+  position: absolute;
+  right: -6px;
+  bottom: 6px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid #007aff;
+  border-bottom: 6px solid transparent;
+  border-top: 6px solid transparent;
+}
+
+/* 头像 */
+.avatar-container {
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.system-avatar {
+  background: linear-gradient(135deg, #1aad19, #00d26a);
+  color: #ffffff;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #007aff, #5856d6);
+  color: #ffffff;
+}
+
+/* 气泡内容 */
+.bubble-text {
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: break-word;
+  margin-bottom: 6px;
+}
+
+.user-bubble .bubble-text {
+  color: #ffffff;
+}
+
+.message-time {
+  font-size: 11px;
+  opacity: 0.7;
+  text-align: right;
+}
+
+.user-bubble .message-time {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 打字指示器 */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  color: #666;
+  font-style: italic;
+}
+
+.typing-dots {
+  margin-left: 8px;
+}
+
+.dot {
+  animation: typingDot 1.4s infinite ease-in-out;
+  font-size: 16px;
+}
+
+.dot:nth-child(1) { animation-delay: -0.32s; }
+.dot:nth-child(2) { animation-delay: -0.16s; }
+.dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typingDot {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 底部输入区域 */
+.chat-input-container {
+  background-color: #ffffff;
+  border-top: 1px solid #e0e0e0;
+  padding: 15px 20px 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 输入模式切换 */
+.input-mode-switch {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  justify-content: center;
+}
+
+.mode-btn {
+  background-color: #f0f0f0;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.3s ease;
+  min-width: 70px;
+}
+
+.mode-btn.active {
+  background: linear-gradient(135deg, #1aad19, #00d26a);
+  color: #ffffff;
+  border-color: #1aad19;
+  transform: scale(1.05);
+}
+
+.mode-icon {
+  font-size: 16px;
+}
+
+.mode-text {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* 文字输入容器 */
+.text-input-container {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.input-wrapper {
+  flex: 1;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 12px 16px;
+  position: relative;
+}
+
+.chat-input {
+  width: 100%;
+  font-size: 16px;
+  color: #333;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  min-height: 20px;
+  max-height: 80px;
+  line-height: 1.4;
+}
+
+.chat-input::placeholder {
+  color: #999;
+}
+
+.char-count {
+  position: absolute;
+  bottom: -20px;
+  right: 16px;
+  font-size: 11px;
+  color: #999;
+}
+
+/* 语音输入容器 */
+.voice-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.voice-input-display {
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 12px 16px;
+  position: relative;
+  min-height: 50px;
+}
+
+.voice-display {
+  width: 100%;
+  font-size: 16px;
+  color: #333;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  min-height: 20px;
+  max-height: 80px;
+  line-height: 1.4;
+}
+
+.voice-display::placeholder {
+  color: #999;
+}
+
+/* 语音控制按钮 */
+.voice-control-buttons {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.voice-record-btn {
+  background: linear-gradient(135deg, #ff3b30, #ff6347);
+  color: #ffffff;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.voice-record-btn:active {
+  transform: scale(0.95);
+}
+
+.voice-stop-btn {
+  background: linear-gradient(135deg, #8e8e93, #636366);
+  color: #ffffff;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(142, 142, 147, 0.3);
+  animation: recording-pulse 1s infinite;
+}
+
+.voice-stop-btn:active {
+  transform: scale(0.95);
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3); }
+  50% { box-shadow: 0 6px 20px rgba(255, 59, 48, 0.5); }
+  100% { box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3); }
+}
+
+@keyframes recording-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.record-icon, .stop-icon {
+  font-size: 18px;
+}
+
+.record-text, .stop-text {
+  font-size: 14px;
+}
+
+.voice-recording {
+  color: #ff3b30;
+  font-weight: bold;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.5; }
+}
+
+/* 发送按钮 */
+.send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  color: #999;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.send-btn.active {
+  background: linear-gradient(135deg, #007aff, #5856d6);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+}
+
+.send-btn[disabled] {
+  background-color: #e0e0e0;
+  color: #999;
+  box-shadow: none;
+}
+
+/* 输入提示 */
+.input-tips {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.tip-text {
+  font-size: 12px;
+  color: #666;
+  padding: 6px 12px;
+  background-color: #f0f0f0;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+/* 重新开始按钮 */
+.restart-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.restart-btn {
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.restart-btn:active {
+  transform: scale(0.95);
+}
+
+.restart-icon {
+  font-size: 16px;
+}
+
+.restart-text {
+  font-size: 12px;
+}
+
+/* 语音状态提示 */
+.voice-status-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+.voice-hint {
+  font-size: 14px;
+  color: #1aad19;
+  background-color: rgba(26, 173, 25, 0.1);
+  padding: 8px 12px;
+  border-radius: 15px;
+  border: 1px solid rgba(26, 173, 25, 0.3);
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+.voice-success {
+  font-size: 14px;
+  color: #00d26a;
+  background-color: rgba(0, 210, 106, 0.1);
+  padding: 8px 12px;
+  border-radius: 15px;
+  border: 1px solid rgba(0, 210, 106, 0.3);
+  text-align: center;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* 自动语音模式状态显示 */
+.auto-voice-status {
+  background: rgba(26, 173, 25, 0.1);
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 15px;
+  border: 1px solid rgba(26, 173, 25, 0.2);
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.status-icon {
+  font-size: 18px;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: bold;
+  color: #1aad19;
+}
+
+/* TTS播放状态 */
+.tts-playing .status-icon {
+  animation: ttsWave 1s ease-in-out infinite;
+}
+
+.tts-playing .status-text {
+  color: #007aff;
+}
+
+@keyframes ttsWave {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* 录音状态 */
+.recording .status-icon {
+  animation: recordingPulse 0.8s ease-in-out infinite;
+}
+
+.recording .status-text {
+  color: #ff3b30;
+}
+
+@keyframes recordingPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+}
+
+/* 等待状态 */
+.waiting .status-icon {
+  animation: waitingRotate 2s linear infinite;
+}
+
+.waiting .status-text {
+  color: #ff9500;
+}
+
+@keyframes waitingRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 准备状态 */
+.ready .status-icon {
+  animation: readySparkle 3s ease-in-out infinite;
+}
+
+.ready .status-text {
+  color: #1aad19;
+}
+
+@keyframes readySparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* 模式提示文字优化 */
+.auto-mode-hint {
+  color: #1aad19;
+  font-weight: bold;
+  font-size: 12px;
+  text-align: center;
+  animation: fadeInOut 2s ease-in-out infinite;
+}
+
+.manual-mode-hint {
+  color: #666;
+  font-size: 12px;
+  text-align: center;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* 智能语音模式标识 */
+
+/* 确保聊天容器有最小高度 */
+
+/* 响应式设计 */
+@media (max-width: 320px) {
+  .chat-header {
+    padding: 12px 15px;
+  }
+  
+  .doctor-name {
+    font-size: 16px;
+  }
+  
+  .chat-messages {
+    padding: 15px 10px;
+  }
+  
+  .message-bubble {
+    max-width: 85%;
+  }
+  
+  .bubble-content {
+    padding: 10px 14px;
+  }
+  
+  .chat-input-container {
+    padding: 12px 15px 15px;
+  }
+  
+  .input-mode-switch {
+    gap: 8px;
+  }
+  
+  .mode-btn {
+    padding: 6px 12px;
+    min-width: 60px;
+  }
+}
+
+/* 深色模式支持（可选） */
+@media (prefers-color-scheme: dark) {
+  .chat-container {
+    background-color: #1a1a1a;
+  }
+  
+  .chat-messages {
+    background-color: #1a1a1a;
+  }
+  
+  .system-bubble .bubble-content {
+    background-color: #2a2a2a;
+    border-color: #404040;
+    color: #ffffff;
+  }
+  
+  .chat-input-container {
+    background-color: #2a2a2a;
+    border-color: #404040;
+  }
+  
+  .input-wrapper {
+    background-color: #3a3a3a;
+    border-color: #505050;
+  }
+  
+  .chat-input {
+    color: #ffffff;
+  }
+}

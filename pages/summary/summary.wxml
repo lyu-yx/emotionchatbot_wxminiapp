@@ -1,0 +1,61 @@
+<view class="summary-container">
+  <view class="header">
+    <text class="title">问诊总结报告</text>
+    <text class="subtitle">基于智能问诊生成的综合分析</text>
+  </view>
+
+  <!-- 医疗总结区域 -->
+  <view class="summary-section">
+    <view class="section-header">
+      <text class="section-title">🏥 病情分析总结</text>
+      <view class="action-buttons">
+        <button class="action-btn" bind:tap="copySummary">复制</button>
+        <button class="action-btn" bind:tap="shareSummary">保存</button>
+      </view>
+    </view>
+    
+    <view class="summary-content">
+      <view wx:if="{{isLoading}}" class="loading">
+        <text>正在生成总结...</text>
+      </view>
+      <text wx:else class="summary-text">{{summary}}</text>
+    </view>
+  </view>
+
+  <!-- 问答记录区域 -->
+  <view class="qa-section" wx:if="{{qaList.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">💬 问答记录</text>
+    </view>
+    
+    <scroll-view class="qa-scroll" scroll-y="true">
+      <view wx:for="{{qaList}}" wx:key="index" class="qa-item">
+        <view class="question">
+          <text class="qa-label">问：</text>
+          <text class="qa-content">{{item.question}}</text>
+        </view>
+        <view class="answer">
+          <text class="qa-label">答：</text>
+          <text class="qa-content">{{item.answer}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 操作按钮区域 -->
+  <view class="button-section">
+    <button class="primary-btn" bind:tap="startNewConsult">
+      🔄 重新问诊
+    </button>
+    <button class="secondary-btn" bind:tap="goHome">
+      🏠 返回首页
+    </button>
+  </view>
+
+  <!-- 免责声明 -->
+  <view class="disclaimer">
+    <text class="disclaimer-text">
+      ⚠️ 本报告仅供参考，不能替代专业医疗诊断。如有症状持续或加重，请及时就医。
+    </text>
+  </view>
+</view>

@@ -1,0 +1,209 @@
+<view class="chat-container">
+  <!-- 头部信息 -->
+  <view class="chat-header">
+    <view class="header-info">
+      <text class="doctor-name">医疗助手</text>
+      <text class="status-text">{{isConsultFinished ? '问诊完成' : '正在问诊'}}</text>
+    </view>
+    <view class="progress-info">
+      <text class="progress-text">{{currentQuestionIndex + 1}} / {{questions.length}}</text>
+    </view>
+  </view>
+
+  <!-- 调试信息显示 -->
+  <view class="debug-panel" style="background: #fff; padding: 10px; margin: 5px; font-size: 12px;">
+    <text>消息数量: {{messageList.length}}</text>
+    <text>\n输入模式: {{inputMode}}</text>
+    <text>\n当前问题索引: {{currentQuestionIndex}}</text>
+  </view>
+
+  <!-- 聊天消息区域 -->
+  <scroll-view 
+    class="chat-messages" 
+    scroll-y="true" 
+    scroll-into-view="{{scrollIntoView}}"
+    scroll-with-animation="true"
+  >
+    <view class="message-list">
+      <!-- 加载提示 -->
+      <view wx:if="{{messageList.length === 0}}" class="debug-info">
+        <text>正在加载对话...</text>
+      </view>
+      
+      <view 
+        wx:for="{{messageList}}" 
+        wx:key="id" 
+        class="message-item {{item.role}}"
+        id="msg_{{item.id}}"
+      >
+        <!-- 系统消息（医生） -->
+        <view wx:if="{{item.role === 'system'}}" class="message-bubble system-bubble">
+          <view class="avatar-container">
+            <view class="avatar system-avatar">👨‍⚕️</view>
+          </view>
+          <view class="bubble-content">
+            <view class="bubble-text">
+              <text wx:if="{{item.typing}}" class="typing-indicator">
+                正在输入
+                <text class="typing-dots">
+                  <text class="dot">.</text>
+                  <text class="dot">.</text>
+                  <text class="dot">.</text>
+                </text>
+              </text>
+              <text wx:else>{{item.text}}</text>
+            </view>
+            <view class="message-time">{{item.formattedTime}}</view>
+          </view>
+        </view>
+
+        <!-- 用户消息 -->
+        <view wx:if="{{item.role === 'user'}}" class="message-bubble user-bubble">
+          <view class="bubble-content">
+            <view class="bubble-text">{{item.text}}</view>
+            <view class="message-time">{{item.formattedTime}}</view>
+          </view>
+          <view class="avatar-container">
+            <view class="avatar user-avatar">👤</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部输入区域 -->
+  <view class="chat-input-container">
+    <!-- 输入模式切换 -->
+    <view class="input-mode-switch">
+      <button 
+        class="mode-btn {{inputMode === '文字输入' ? 'active' : ''}}" 
+        bindtap="switchInputMode"
+        data-mode="文字输入"
+      >
+        <text class="mode-icon">✏️</text>
+        <text class="mode-text">文字</text>
+      </button>
+      <button 
+        class="mode-btn {{inputMode === '语音输入' ? 'active' : ''}}" 
+        bindtap="switchInputMode"
+        data-mode="语音输入"
+      >
+        <text class="mode-icon">🎤</text>
+        <text class="mode-text">语音</text>
+      </button>
+    </view>
+
+    <!-- 文字输入模式 -->
+    <view wx:if="{{inputMode === '文字输入'}}" class="text-input-container">
+      <view class="input-wrapper">
+        <textarea 
+          class="chat-input" 
+          placeholder="{{isConsultFinished ? '问诊已完成' : '请输入您的回答...'}}"
+          value="{{inputText}}"
+          bindinput="onInput"
+          bindconfirm="sendMessage"
+          disabled="{{isInputDisabled || isConsultFinished}}"
+          maxlength="500"
+          auto-height
+          show-confirm-bar="{{!isInputDisabled && !isConsultFinished && inputText.trim()}}"
+          confirm-type="send"
+        />
+        <text class="char-count">{{inputText.length}}/500</text>
+      </view>
+      <button 
+        class="send-btn {{inputText.trim() ? 'active' : ''}}" 
+        bindtap="sendMessage"
+        disabled="{{!inputText.trim() || isWaitingResponse || isConsultFinished}}"
+      >
+        <text class="send-icon">📤</text>
+      </button>
+    </view>
+
+    <!-- 语音输入模式 -->
+    <view wx:if="{{inputMode === '语音输入'}}" class="voice-input-container">
+      <view class="voice-input-display">
+        <textarea 
+          class="voice-display" 
+          placeholder="{{isConsultFinished ? '问诊已完成' : (autoVoiceMode ? '智能语音模式：医生播报后自动录音' : '点击录音按钮开始录音')}}"
+          value="{{inputText}}"
+          disabled="true"
+          auto-height
+        />
+        <text class="char-count">{{inputText.length}}/500</text>
+      </view>
+      <view class="voice-controls">
+        <!-- 自动语音模式状态显示 -->
+        <view wx:if="{{autoVoiceMode}}" class="auto-voice-status">
+          <view wx:if="{{isTTSPlaying}}" class="status-item tts-playing">
+            <text class="status-icon">🔊</text>
+            <text class="status-text">医生播报中...</text>
+          </view>
+          <view wx:elif="{{isRecording}}" class="status-item recording">
+            <text class="status-icon">🎤</text>
+            <text class="status-text">正在录音中，请回答问题</text>
+          </view>
+          <view wx:elif="{{isWaitingResponse}}" class="status-item waiting">
+            <text class="status-icon">💭</text>
+            <text class="status-text">正在处理您的回答...</text>
+          </view>
+          <view wx:else class="status-item ready">
+            <text class="status-icon">✨</text>
+            <text class="status-text">智能语音模式已激活</text>
+          </view>
+        </view>
+        
+        <!-- 手动录音控制（非自动模式时显示） -->
+        <view wx:if="{{!autoVoiceMode}}" class="voice-control-buttons">
+          <button 
+            wx:if="{{!isRecording && !isConsultFinished}}"
+            class="voice-record-btn" 
+            bindtap="startVoiceInput"
+            disabled="{{isInputDisabled}}"
+          >
+            <text class="record-icon">🎤</text>
+            <text class="record-text">开始录音</text>
+          </button>
+          <button 
+            wx:if="{{isRecording}}"
+            class="voice-stop-btn" 
+            bindtap="stopVoiceInput"
+          >
+            <text class="stop-icon">⏹️</text>
+            <text class="stop-text">停止录音</text>
+          </button>
+        </view>
+        
+        <view class="voice-status-text">
+          <text wx:if="{{inputText}}" class="voice-success">语音识别完成，已自动发送</text>
+          <text wx:elif="{{autoVoiceMode && !isConsultFinished}}" class="auto-mode-hint">自动语音模式：请等待医生播报完问题后回答</text>
+          <text wx:elif="{{!autoVoiceMode && !isConsultFinished}}" class="manual-mode-hint">手动模式：点击录音按钮开始</text>
+        </view>
+        
+        <!-- 发送按钮（手动模式需要） -->
+        <button 
+          wx:if="{{!autoVoiceMode}}"
+          class="send-btn {{inputText.trim() ? 'active' : ''}}" 
+          bindtap="sendMessage"
+          disabled="{{!inputText.trim() || isWaitingResponse || isConsultFinished}}"
+        >
+          <text class="send-icon">📤</text>
+        </button>
+      </view>
+    </view>
+
+    <!-- 操作提示 -->
+    <view class="input-tips" wx:if="{{!isConsultFinished}}">
+      <text class="tip-text">
+        {{isWaitingResponse ? '正在等待回复...' : '回答完成后点击发送继续问诊'}}
+      </text>
+    </view>
+  </view>
+
+  <!-- 重新开始按钮 -->
+  <view class="restart-container">
+    <button class="restart-btn" bindtap="restartConsult">
+      <text class="restart-icon">🔄</text>
+      <text class="restart-text">重新开始</text>
+    </button>
+  </view>
+</view>

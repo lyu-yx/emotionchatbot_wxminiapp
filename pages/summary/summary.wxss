@@ -1,0 +1,190 @@
+/* 总结页面样式 */
+.summary-container {
+  padding: 20rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+/* 头部区域 */
+.header {
+  text-align: center;
+  padding: 40rpx 20rpx;
+  background: white;
+  border-radius: 20rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #7f8c8d;
+}
+
+/* 总结区域 */
+.summary-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  padding-bottom: 15rpx;
+  border-bottom: 2rpx solid #ecf0f1;
+}
+
+.section-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10rpx;
+}
+
+.action-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 10rpx;
+  padding: 10rpx 20rpx;
+  font-size: 24rpx;
+  margin: 0;
+}
+
+.action-btn:active {
+  background: #2980b9;
+}
+
+.summary-content {
+  line-height: 1.6;
+}
+
+.loading {
+  text-align: center;
+  padding: 40rpx;
+  color: #7f8c8d;
+  font-size: 30rpx;
+}
+
+.summary-text {
+  font-size: 30rpx;
+  color: #2c3e50;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+/* 问答记录区域 */
+.qa-section {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.qa-scroll {
+  max-height: 600rpx;
+}
+
+.qa-item {
+  margin-bottom: 25rpx;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 15rpx;
+  border-left: 6rpx solid #3498db;
+}
+
+.question, .answer {
+  display: flex;
+  margin-bottom: 10rpx;
+}
+
+.qa-label {
+  font-weight: bold;
+  color: #2c3e50;
+  min-width: 60rpx;
+  font-size: 28rpx;
+}
+
+.qa-content {
+  flex: 1;
+  color: #34495e;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+.question .qa-label {
+  color: #e74c3c;
+}
+
+.answer .qa-label {
+  color: #27ae60;
+}
+
+/* 按钮区域 */
+.button-section {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.primary-btn, .secondary-btn {
+  flex: 1;
+  padding: 25rpx;
+  border-radius: 15rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  margin: 0;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.primary-btn:active {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+.secondary-btn {
+  background: #ecf0f1;
+  color: #2c3e50;
+  border: 2rpx solid #bdc3c7;
+}
+
+.secondary-btn:active {
+  background: #d5dbdb;
+}
+
+/* 免责声明 */
+.disclaimer {
+  background: #fff3cd;
+  border: 2rpx solid #ffeaa7;
+  border-radius: 15rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.disclaimer-text {
+  font-size: 24rpx;
+  color: #856404;
+  line-height: 1.5;
+  text-align: center;
+}

@@ -1,0 +1,54 @@
+<view class="test-container">
+  <view class="header">
+    <text class="title">DashScope API 功能测试</text>
+    <text class="subtitle">验证LLM、ASR、TTS功能是否正常</text>
+  </view>
+  <view class="button-group">
+    <button class="test-btn" bind:tap="runAllTests" disabled="{{testing}}">
+      {{testing ? '测试中...' : '运行所有测试'}}
+    </button>
+    <button class="test-btn secondary" bind:tap="testLLM">测试LLM</button>
+    <button class="test-btn secondary" bind:tap="testTTS">测试TTS</button>
+    <button class="test-btn secondary" bind:tap="testASR">测试ASR</button>
+    <button class="clear-btn" bind:tap="clearResults">清空结果</button>
+  </view>
+
+  <view class="results-container">
+    <view class="results-header">
+      <text class="results-title">测试结果</text>
+      <button class="copy-btn" bind:tap="copyAPIInfo">复制配置</button>
+    </view>
+    
+    <scroll-view class="results-scroll" scroll-y="true">
+      <block wx:for="{{testResults}}" wx:key="index">
+        <view class="result-item {{item.type}}">
+          <view class="result-content">
+            <text class="result-time">[{{item.time}}]</text>
+            <text class="result-message">{{item.message}}</text>
+          </view>
+          <view class="result-icon">
+            <text wx:if="{{item.type === 'success'}}">✅</text>
+            <text wx:elif="{{item.type === 'error'}}">❌</text>
+            <text wx:else="{{item.type === 'info'}}">ℹ️</text>
+          </view>
+        </view>
+      </block>
+      
+      <view wx:if="{{testResults.length === 0}}" class="empty-results">
+        <text>点击上方按钮开始测试</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="info-section">
+    <text class="info-title">配置检查</text>
+    <view class="config-item">
+      <text class="config-label">API密钥:</text>
+      <text class="config-value">{{apiKey ? apiKey : '未配置'}}</text>
+    </view>
+    <view class="config-item">
+      <text class="config-label">LLM模型:</text>
+      <text class="config-value">{{model}}</text>
+    </view>
+  </view>
+</view>
