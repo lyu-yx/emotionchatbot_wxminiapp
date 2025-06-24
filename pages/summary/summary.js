@@ -5,6 +5,7 @@ Page({
   data: {
     qaList: [],
     summary: "正在生成问诊总结...",
+    parsedSummary: [], // 用于rich-text的节点数组
     patientData: {},
     chatHistory: [],
     isLoading: true
@@ -43,6 +44,7 @@ Page({
           summary: message.content,
           isLoading: false
         });
+        this.parseMarkdownToRichText(message.content);
         return;
       }
     }
@@ -90,6 +92,7 @@ Page({
       summary: summary,
       isLoading: false
     });
+    this.parseMarkdownToRichText(summary);
   },
 
   /**
@@ -138,5 +141,121 @@ Page({
    */
   goHome() {
     wx.reLaunch({ url: '/pages/index/index' });
+  },
+
+  /**
+   * 将Markdown文本解析为rich-text可用的节点数组
+   */
+  parseMarkdownToRichText(markdownText) {
+    const nodes = [];
+    const lines = markdownText.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (!line) {
+        // 空行，添加换行
+        nodes.push({
+          name: 'br',
+          type: 'node'
+        });
+        continue;
+      }
+      
+      // 处理标题 (## 开头)
+      if (line.startsWith('## ')) {
+        nodes.push({
+          name: 'div',
+          attrs: {
+            class: 'markdown-h2'
+          },
+          children: [{
+            type: 'text',
+            text: line.substring(3)
+          }]
+        });
+      }
+      // 处理粗体文本 (**text**)
+      else if (line.includes('**')) {
+        const parts = this.parseBoldText(line);
+        nodes.push({
+          name: 'div',
+          attrs: {
+            class: 'markdown-p'
+          },
+          children: parts
+        });
+      }
+      // 普通文本
+      else {
+        nodes.push({
+          name: 'div',
+          attrs: {
+            class: 'markdown-p'
+          },
+          children: [{
+            type: 'text',
+            text: line
+          }]
+        });
+      }
+    }
+    
+    this.setData({
+      parsedSummary: nodes
+    });
+  },
+
+  /**
+   * 解析粗体文本
+   */
+  parseBoldText(text) {
+    const parts = [];
+    const regex = /\*\*(.*?)\*\*/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = regex.exec(text)) !== null) {
+      // 添加粗体前的普通文本
+      if (match.index > lastIndex) {
+        const normalText = text.substring(lastIndex, match.index);
+        if (normalText) {
+          parts.push({
+            type: 'text',
+            text: normalText
+          });
+        }
+      }
+      
+      // 添加粗体文本
+      parts.push({
+        name: 'span',
+        attrs: {
+          class: 'markdown-bold'
+        },
+        children: [{
+          type: 'text',
+          text: match[1]
+        }]
+      });
+      
+      lastIndex = regex.lastIndex;
+    }
+    
+    // 添加剩余的普通文本
+    if (lastIndex < text.length) {
+      const remainingText = text.substring(lastIndex);
+      if (remainingText) {
+        parts.push({
+          type: 'text',
+          text: remainingText
+        });
+      }
+    }
+    
+    return parts.length > 0 ? parts : [{
+      type: 'text',
+      text: text
+    }];
   }
 })

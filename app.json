@@ -3,7 +3,9 @@
     "pages/index/index",
     "pages/consult/consult",
     "pages/summary/summary",
-    "pages/test/test"
+    "pages/test/test",
+    "pages/cloud-diagnose/cloud-diagnose",
+    "pages/realtime-asr-test/realtime-asr-test"
   ],
   "window": {
     "navigationBarTitleText": "智能医疗助手"

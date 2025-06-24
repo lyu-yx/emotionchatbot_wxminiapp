@@ -1,5 +1,7 @@
 // 引入LLM配置
 const LLM_CONFIG = require('../../config/llm-config.js');
+// 引入实时语音识别工具类
+const TencentRealtimeASR = require('../../utils/tencent-realtime-asr.js');
 
 Page({
   data: {
@@ -228,9 +230,9 @@ Page({
       "T8-睡眠情绪": "",
       "T9-女性月经": ""
     },
-    
-    messageList: [],               // 对话消息列表
+      messageList: [],               // 对话消息列表
     inputText: "",                 // 当前输入文本
+    inputFocus: false,             // 输入框焦点状态
     inputMode: wx.getStorageSync("inputMode") || "语音输入",
     showVoiceInput: false,         // 控制语音输入组件显示
     currentQuestionKey: "T1-基础信息", // 当前问题键值
@@ -245,30 +247,42 @@ Page({
     silenceTimer: null,            // 静音检测定时器
     silenceThreshold: 1500,        // 静音阈值1.5秒
     autoVoiceMode: false,          // 自动语音模式
+    
+    // 实时语音识别相关
+    realtimeASR: null,             // 实时语音识别实例
+    isRealtimeRecording: false,    // 是否正在实时录音
+    realtimeRecognitionText: "",   // 实时识别文本
+    showRealtimeResult: false,     // 是否显示实时识别结果
+    useRealtimeASR: true,          // 是否使用实时语音识别
       // LLM配置
     llmConfig: LLM_CONFIG
   },
-
   onLoad() {
     console.log('问诊页面开始加载');
-    // 初始化对话，添加第一条系统消息
-    this.initializeChat();
     
-    // 初始化语音相关设置
+    // 先初始化语音相关设置
     this.initVoiceSettings();
+    
+    // 然后初始化对话，添加第一条系统消息
+    this.initializeChat();
   },
-
   /**
    * 初始化语音设置
    */
   initVoiceSettings() {
+    // 检查是否启用实时语音识别
+    const enableRealtimeASR = this.data.llmConfig.enableRealtimeASR !== false;
+    
     // 如果是语音模式，开启自动语音模式
     if (this.data.inputMode === '语音输入') {
-      this.setData({ autoVoiceMode: true });
+      this.setData({ 
+        autoVoiceMode: true,
+        useRealtimeASR: enableRealtimeASR
+      });
       console.log('开启自动语音模式');
+      console.log('实时语音识别:', enableRealtimeASR ? '启用' : '禁用');
     }
-  },
-  /**
+  },/**
    * 初始化聊天对话
    */
   initializeChat() {
@@ -278,7 +292,7 @@ Page({
     const welcomeMessage = {
       id: this.generateMessageId(),
       role: "system",
-      text: "您好！我是您的医疗助手，接下来我会问您几个问题来了解您的症状。",
+      text: "您好！我是您的智能问诊助手，接下来我会通过提问来了解您的健康状况，这样能帮助医生更好地了解您的情况。准备好了吗？我们开始第一个问题。",
       timestamp: timestamp,
       formattedTime: this.formatTime(timestamp),
       typing: false
@@ -295,16 +309,27 @@ Page({
 
     this.setData({
       messageList: [welcomeMessage, firstQuestionMessage]
-    });
-
-    // 滚动到最新消息
+    });    // 滚动到最新消息
     this.scrollToBottom();
+      console.log('初始化聊天完成，检查是否需要TTS播报');
+    console.log('当前autoVoiceMode:', this.data.autoVoiceMode);
+    console.log('当前inputMode:', this.data.inputMode);
     
-    // 如果是语音模式，播放TTS并自动开始录音
-    if (this.data.autoVoiceMode) {
+    // 不论语音模式还是文字模式，都播放TTS - 医生问题必须有语音播报
+    console.log('开始TTS播报初始化消息（适用于所有模式）');
+    const fullWelcomeText = `${welcomeMessage.text} ${currentQuestion.question}`;
+    console.log('TTS播报内容:', fullWelcomeText);
+      if (this.data.autoVoiceMode) {
+      // 语音模式：TTS播报 + 自动录音
+      this.playTTSAndStartRecording(fullWelcomeText);
+    } else {
+      // 文字模式：仅TTS播报，不自动录音
+      this.playTTSOnly(fullWelcomeText);
+      
+      // 文字模式下，延迟给输入框设置焦点
       setTimeout(() => {
-        this.playTTSAndStartRecording(currentQuestion.question);
-      }, 1000);
+        this.setData({ inputFocus: true });
+      }, 2000); // TTS播放完毕后设置焦点
     }
   },
 
@@ -336,7 +361,6 @@ Page({
     
     return null;
   },
-
   /**
    * 检查问题条件是否满足
    */
@@ -347,7 +371,26 @@ Page({
     if (condition.includes("==")) {
       const [field, value] = condition.split("==").map(s => s.trim());
       const cleanValue = value.replace(/['"]/g, '');
-      return this.data.patientData[field] === cleanValue;
+      const patientValue = this.data.patientData[field];
+      
+      console.log(`检查条件: ${field} == ${cleanValue}, 患者数据: ${patientValue}`);
+      
+      // 特殊处理性别判断
+      if (field === 'gender') {
+        // 如果患者性别还未确定，返回false（跳过女性专属问题）
+        if (!patientValue) {
+          console.log('性别未确定，跳过女性专属问题');
+          return false;
+        }
+        // 标准化性别值进行比较
+        const normalizedPatientGender = patientValue.toLowerCase();
+        const normalizedConditionGender = cleanValue.toLowerCase();
+        const result = normalizedPatientGender === normalizedConditionGender;
+        console.log(`性别匹配结果: ${result}`);
+        return result;
+      }
+      
+      return patientValue === cleanValue;
     }
     
     // 解析布尔条件，如 "fever == true"
@@ -368,22 +411,22 @@ Page({
     }
     
     return true;
-  },
-  /**
-   * 播放TTS并自动开始录音 - 使用DashScope TTS
+  },/**
+   * 播放TTS并自动开始录音 - 使用腾讯云TTS（语音模式专用）
    * @param {string} text - 要播放的文本
    */
   async playTTSAndStartRecording(text) {
-    if (!this.data.autoVoiceMode) return;
+    console.log('进入playTTSAndStartRecording方法（语音模式）');
+    console.log('要播放的文本:', text);
     
     try {
-      console.log('开始TTS播放:', text);
+      console.log('开始腾讯云TTS播放:', text);
       this.setData({ isTTSPlaying: true });
       
-      // 使用DashScope TTS播放
-      await this.playDashScopeTTS(text);
+      // 使用腾讯云TTS播放
+      await this.playTencentTTS(text);
       
-      console.log('TTS播放完成，开始自动录音');
+      console.log('腾讯云TTS播放完成，开始自动录音');
       this.setData({ isTTSPlaying: false });
       
       // TTS播放完成后，自动开始录音
@@ -392,10 +435,35 @@ Page({
       }, 500); // 0.5秒延迟后开始录音
       
     } catch (error) {
-      console.error('TTS播放失败:', error);
+      console.error('腾讯云TTS播放失败:', error);
       this.setData({ isTTSPlaying: false });
       // TTS失败也要开始录音
       this.startAutoVoiceRecording();
+    }
+  },
+
+  /**
+   * 仅播放TTS，不启动录音 - 适用于文字输入模式
+   * @param {string} text - 要播放的文本
+   */
+  async playTTSOnly(text) {
+    console.log('进入playTTSOnly方法（文字模式TTS播报）');
+    console.log('要播放的文本:', text);
+    
+    try {
+      console.log('开始腾讯云TTS播放（仅播报，不录音）:', text);
+      this.setData({ isTTSPlaying: true });
+      
+      // 使用腾讯云TTS播放
+      await this.playTencentTTS(text);
+      
+      console.log('腾讯云TTS播放完成（文字模式，不启动录音）');
+      this.setData({ isTTSPlaying: false });
+      
+    } catch (error) {
+      console.error('腾讯云TTS播放失败（文字模式）:', error);
+      this.setData({ isTTSPlaying: false });
+      // 文字模式下TTS失败不需要特殊处理，用户可以正常文字输入
     }
   },
 
@@ -481,7 +549,79 @@ Page({
       });
       
       audioContext.play();
-    });
+    });  },
+
+  /**
+   * 使用腾讯云TTS播放语音
+   * @param {string} text - 要播放的文本
+   */
+  async playTencentTTS(text) {
+    try {
+      console.log('调用腾讯云TTS云函数:', text);
+        // 准备TTS配置
+      const ttsConfig = {
+        appid: this.data.llmConfig.tts?.appid || this.data.llmConfig.tencent?.appid || '1365883949',
+        secretid: this.data.llmConfig.tts?.secretid || this.data.llmConfig.tencent?.secretid,
+        secretkey: this.data.llmConfig.tts?.secretkey || this.data.llmConfig.tencent?.secretkey,
+        voicetype: this.data.llmConfig.tts?.voicetype || 1002, // 标准女声
+        samplerate: this.data.llmConfig.tts?.samplerate || 16000,
+        codec: this.data.llmConfig.tts?.codec || 'mp3',
+        volume: this.data.llmConfig.tts?.volume || 0,
+        speed: this.data.llmConfig.tts?.speed || 0,
+        emotion: this.data.llmConfig.tts?.emotion || 'neutral'
+      };
+      
+      // 调用腾讯云TTS云函数
+      const result = await new Promise((resolve, reject) => {
+        wx.cloud.callFunction({
+          name: 'tts',
+          data: {
+            text: text,
+            config: ttsConfig
+          },
+          success: res => {
+            console.log('腾讯云TTS云函数调用成功:', res);
+            if (res.result && res.result.success) {
+              resolve(res.result);
+            } else {
+              reject(new Error(res.result ? res.result.error : 'TTS云函数调用失败'));
+            }
+          },
+          fail: err => {
+            reject(new Error(`TTS云函数调用失败: ${err.errMsg}`));
+          }
+        });
+      });
+      
+      // 处理TTS返回的音频数据
+      if (result.data && result.data.Audio) {
+        // 保存音频文件并播放
+        const audioData = result.data.Audio;
+        const timestamp = Math.floor(Date.now() / 1000);
+        const fileName = `tts_${timestamp}.mp3`;
+        const filePath = `${wx.env.USER_DATA_PATH}/${fileName}`;
+        
+        // 保存音频文件
+        await new Promise((resolve, reject) => {
+          wx.getFileSystemManager().writeFile({
+            filePath: filePath,
+            data: wx.base64ToArrayBuffer(audioData),
+            success: resolve,
+            fail: reject
+          });
+        });
+        
+        // 播放音频文件
+        return this.playAudioFromUrl(filePath);
+      } else {
+        throw new Error('TTS响应中没有音频数据');
+      }
+      
+    } catch (error) {
+      console.error('腾讯云TTS调用失败:', error);
+      // 降级到备用TTS
+      return this.playBackupTTS(text);
+    }
   },
 
   /**
@@ -497,7 +637,6 @@ Page({
       }, Math.min(estimatedDuration, 3000)); // 最多3秒
     });
   },
-
   /**
    * 自动开始语音录音
    */
@@ -508,31 +647,265 @@ Page({
 
     console.log('开始自动语音录音');
     
-    // 检查麦克风权限
-    wx.authorize({
-      scope: 'scope.record',
-      success: () => {
-        this.doStartAutoRecording();
+    // 先检查麦克风权限状态
+    wx.getSetting({
+      success: (res) => {
+        if (res.authSetting['scope.record'] === true) {
+          // 已授权，直接开始录音
+          this.doStartAutoRecording();
+        } else if (res.authSetting['scope.record'] === false) {
+          // 权限被拒绝，引导用户到设置页面
+          this.showPermissionModal();
+        } else {
+          // 未申请过权限，申请权限
+          this.requestRecordPermission(() => {
+            this.doStartAutoRecording();
+          });
+        }
       },
       fail: () => {
-        wx.showModal({
-          title: '权限申请',
-          content: '需要获取麦克风权限进行语音输入',
-          confirmText: '去设置',
-          success: (res) => {
-            if (res.confirm) {
-              wx.openSetting();
-            }
-          }
+        // 获取设置失败，尝试直接申请权限
+        this.requestRecordPermission(() => {
+          this.doStartAutoRecording();
         });
       }
     });
   },
-
   /**
    * 执行自动录音
    */
   doStartAutoRecording() {
+    if (this.data.useRealtimeASR) {
+      // 使用实时语音识别
+      this.startRealtimeASR();
+    } else {
+      // 使用传统的一句话识别
+      this.startTraditionalRecording();
+    }
+  },
+  /**
+   * 开始实时语音识别
+   */
+  async startRealtimeASR() {
+    try {
+      console.log('开始实时语音识别...');
+      
+      // 设置状态
+      this.setData({ 
+        isRealtimeRecording: true,
+        realtimeRecognitionText: '',
+        showRealtimeResult: true
+      });
+
+      // 显示提示
+      wx.showToast({
+        title: '开始实时识别...',
+        icon: 'none',
+        duration: 1000
+      });
+
+      // 初始化实时语音识别
+      if (!this.data.realtimeASR) {
+        const asrConfig = {
+          appid: this.data.llmConfig.asr?.appid || this.data.llmConfig.tencent?.appid || '1365883949',
+          secretid: this.data.llmConfig.asr?.secretid || this.data.llmConfig.tencent?.secretid,
+          secretkey: this.data.llmConfig.asr?.secretkey || this.data.llmConfig.tencent?.secretkey,
+          engine_model_type: this.data.llmConfig.asr?.engine_model_type || '16k_zh',
+          voice_format: this.data.llmConfig.asr?.voice_format || 1, // 使用PCM格式
+          needvad: 1, // 开启VAD
+          filter_dirty: this.data.llmConfig.asr?.filter_dirty || 0,
+          filter_modal: this.data.llmConfig.asr?.filter_modal || 0,
+          filter_punc: this.data.llmConfig.asr?.filter_punc || 0,
+          convert_num_mode: this.data.llmConfig.asr?.convert_num_mode || 1,
+          word_info: this.data.llmConfig.asr?.word_info || 0,
+          vad_silence_time: this.data.llmConfig.asr?.vad_silence_time || 1000
+        };
+
+        const realtimeASR = new TencentRealtimeASR(asrConfig);
+        
+        // 设置回调函数
+        realtimeASR.onResult = (result) => {
+          this.handleRealtimeASRResult(result);
+        };
+        
+        realtimeASR.onError = (error) => {
+          this.handleRealtimeASRError(error);
+        };
+        
+        realtimeASR.onEnd = () => {
+          this.handleRealtimeASREnd();
+        };
+
+        this.setData({ realtimeASR });
+      }
+
+      // 先检查权限，再开始实时识别
+      try {
+        await this.checkRealtimeASRPermission();
+        await this.data.realtimeASR.start();
+      } catch (permissionError) {
+        console.log('权限检查失败，降级到传统录音:', permissionError.message);
+        throw permissionError;
+      }
+      
+    } catch (error) {
+      console.error('启动实时语音识别失败:', error);
+      this.setData({ 
+        isRealtimeRecording: false,
+        showRealtimeResult: false
+      });
+      
+      // 降级到传统识别
+      this.startTraditionalRecording();
+    }
+  },
+
+  /**
+   * 检查实时ASR权限
+   */
+  async checkRealtimeASRPermission() {
+    return new Promise((resolve, reject) => {
+      wx.getSetting({
+        success: (res) => {
+          if (res.authSetting['scope.record'] === true) {
+            // 已授权，直接继续
+            resolve();
+          } else if (res.authSetting['scope.record'] === false) {
+            // 权限被拒绝，显示提示并降级
+            wx.showModal({
+              title: '麦克风权限',
+              content: '实时语音识别需要麦克风权限，将使用普通录音模式',
+              showCancel: false,
+              confirmText: '知道了'
+            });
+            reject(new Error('权限被拒绝'));
+          } else {
+            // 首次申请权限
+            wx.authorize({
+              scope: 'scope.record',
+              success: () => resolve(),
+              fail: () => {
+                wx.showModal({
+                  title: '麦克风权限',
+                  content: '实时语音识别需要麦克风权限，将使用普通录音模式',
+                  showCancel: false,
+                  confirmText: '知道了'
+                });
+                reject(new Error('权限申请失败'));
+              }
+            });
+          }
+        },
+        fail: () => {
+          // 获取设置失败，尝试直接申请权限
+          wx.authorize({
+            scope: 'scope.record',
+            success: () => resolve(),
+            fail: () => reject(new Error('权限申请失败'))          });
+        }
+      });
+    });
+  },
+
+  /**
+   * 处理实时语音识别结果
+   */
+  handleRealtimeASRResult(result) {
+    console.log('实时识别结果:', result);
+    
+    // 更新实时显示的识别文本
+    this.setData({
+      realtimeRecognitionText: result.text
+    });
+
+    // 如果是最终结果（稳态），处理完整的识别内容
+    if (result.is_final && result.text.trim()) {
+      console.log('收到最终识别结果:', result.text);
+      
+      // 停止实时识别
+      this.stopRealtimeASR();
+      
+      // 发送识别结果
+      this.processRealtimeASRResult(result.text);
+    }
+  },
+
+  /**
+   * 处理实时语音识别错误
+   */
+  handleRealtimeASRError(error) {
+    console.error('实时语音识别错误:', error);
+    
+    this.setData({ 
+      isRealtimeRecording: false,
+      showRealtimeResult: false
+    });
+
+    wx.showToast({
+      title: '语音识别失败，请重试',
+      icon: 'none',
+      duration: 2000
+    });
+
+    // 2秒后重新开始录音
+    setTimeout(() => {
+      if (this.data.autoVoiceMode && !this.data.isConsultFinished) {
+        this.startAutoVoiceRecording();
+      }
+    }, 2000);
+  },
+
+  /**
+   * 实时语音识别结束
+   */
+  handleRealtimeASREnd() {
+    console.log('实时语音识别结束');
+    
+    this.setData({ 
+      isRealtimeRecording: false,
+      showRealtimeResult: false,
+      realtimeRecognitionText: ''
+    });
+  },
+
+  /**
+   * 停止实时语音识别
+   */
+  async stopRealtimeASR() {
+    if (this.data.realtimeASR && this.data.isRealtimeRecording) {
+      try {
+        await this.data.realtimeASR.stop();
+      } catch (error) {
+        console.error('停止实时语音识别失败:', error);
+      }
+    }
+  },
+
+  /**
+   * 处理实时识别的最终结果
+   */
+  async processRealtimeASRResult(text) {
+    if (!text.trim()) {
+      console.log('识别结果为空');
+      this.handleRecognitionFailure();
+      return;
+    }
+
+    console.log('处理实时识别结果:', text);
+    
+    try {
+      // 自动发送识别结果
+      await this.sendAutoVoiceMessage(text);
+    } catch (error) {
+      console.error('发送实时识别结果失败:', error);
+      this.handleRecognitionFailure();
+    }
+  },
+
+  /**
+   * 传统录音方式
+   */
+  startTraditionalRecording() {
     // 初始化录音管理器
     if (!this.recorderManager) {
       this.recorderManager = wx.getRecorderManager();
@@ -549,7 +922,7 @@ Page({
       duration: 1000
     });
 
-    console.log('开始自动录音');
+    console.log('开始传统录音');
     
     // 开始录音
     this.recorderManager.start({
@@ -579,16 +952,24 @@ Page({
       this.stopAutoRecording();
     }, this.data.silenceThreshold);
   },
-
   /**
    * 停止自动录音
    */
   stopAutoRecording() {
-    if (!this.data.isRecording) {
-      return;
+    if (this.data.useRealtimeASR && this.data.isRealtimeRecording) {
+      // 停止实时语音识别
+      this.stopRealtimeASR();
+    } else if (this.data.isRecording) {
+      // 停止传统录音
+      this.stopTraditionalRecording();
     }
+  },
 
-    console.log('停止自动录音');
+  /**
+   * 停止传统录音
+   */
+  stopTraditionalRecording() {
+    console.log('停止传统录音');
     
     // 清除静音检测定时器
     if (this.silenceTimer) {
@@ -644,14 +1025,13 @@ Page({
         icon: 'none'
       });
     });
-  },
-  /**
-   * 处理自动语音识别 - 使用DashScope ASR
+  },  /**
+   * 处理自动语音识别 - 使用腾讯云ASR
    */
   async processAutoVoiceRecognition(audioPath) {
     try {
-      // 调用DashScope ASR进行语音识别
-      const result = await this.callDashScopeASR(audioPath);
+      // 调用腾讯云ASR进行语音识别
+      const result = await this.callASRCloudFunction(audioPath);
       
       wx.hideToast();
       
@@ -831,18 +1211,22 @@ Page({
       `您的回答似乎与问题不太相关。${currentQuestion.question}`,
       true
     );
-    
-    this.setData({ 
+      this.setData({ 
       isWaitingResponse: false,
       isInputDisabled: false 
     });
 
-    // 如果是自动语音模式，播放TTS并开始录音
-    if (this.data.autoVoiceMode) {
-      setTimeout(() => {
-        this.playTTSAndStartRecording(`您的回答似乎与问题不太相关。${currentQuestion.question}`);
-      }, 500);
-    }
+    // 播放TTS（所有模式都需要），语音模式额外启动录音
+    const repeatText = `您的回答似乎与问题不太相关。${currentQuestion.question}`;
+    setTimeout(() => {
+      if (this.data.autoVoiceMode) {
+        // 语音模式：TTS播报 + 自动录音
+        this.playTTSAndStartRecording(repeatText);
+      } else {
+        // 文字模式：仅TTS播报
+        this.playTTSOnly(repeatText);
+      }
+    }, 500);
   },
 
   /**
@@ -851,7 +1235,6 @@ Page({
   generateMessageId() {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   },
-
   /**
    * 文字输入处理
    */
@@ -860,7 +1243,14 @@ Page({
   },
 
   /**
-   * 发送消息（文字模式）
+   * 输入框失去焦点
+   */
+  onInputBlur() {
+    this.setData({ inputFocus: false });
+  },
+
+  /**
+   * 发送消息（文字模式）`
    */
   async sendMessage() {
     const text = this.data.inputText.trim();
@@ -899,17 +1289,31 @@ Page({
     try {
       // 检查回答相关性
       const isRelevant = await this.checkAnswerRelevance(text);
-      
-      if (!isRelevant) {
+        if (!isRelevant) {
         // 如果回答不相关，给出提示
-        await this.addSystemMessage(
-          "您的回答似乎与问题不太相关，能否请您重新回答一下？",
-          true
-        );
-        this.setData({ 
+        const irrelevantMessage = "您的回答似乎与问题不太相关，能否请您重新回答一下？";
+        await this.addSystemMessage(irrelevantMessage, true);
+        
+        // 播放相关性提示的TTS
+        setTimeout(() => {
+          if (this.data.autoVoiceMode) {
+            // 语音模式：TTS播报 + 自动录音
+            this.playTTSAndStartRecording(irrelevantMessage);
+          } else {
+            // 文字模式：仅TTS播报
+            this.playTTSOnly(irrelevantMessage);
+          }
+        }, 1500);
+          this.setData({ 
           isWaitingResponse: false,
-          isInputDisabled: false 
+          isInputDisabled: false,
+          inputText: "" // 清空输入框但保持焦点
         });
+        
+        // 设置输入框焦点
+        setTimeout(() => {
+          this.setData({ inputFocus: true });
+        }, 100);
         return;
       }
 
@@ -917,15 +1321,20 @@ Page({
       await this.processNextQuestion();
       
     } catch (error) {
-      console.error('发送消息错误:', error);
-      wx.showToast({
+      console.error('发送消息错误:', error);      wx.showToast({
         title: '发送失败，请重试',
         icon: 'none'
       });
       this.setData({ 
         isWaitingResponse: false,
-        isInputDisabled: false 
+        isInputDisabled: false,
+        inputText: ""
       });
+      
+      // 设置输入框焦点
+      setTimeout(() => {
+        this.setData({ inputFocus: true });
+      }, 100);
     }
   },
   /**
@@ -1228,19 +1637,27 @@ Page({
       if (this.checkQuestionCondition(nextFollowUp.condition)) {
         // 进行追问
         await this.addSystemMessage(nextFollowUp.question, true);
-        
-        this.setData({
+          this.setData({
           currentFollowUpIndex: nextFollowUpIndex,
           isWaitingResponse: false,
           isInputDisabled: false
         });
-
-        // 如果是自动语音模式，播放TTS并开始录音
-        if (this.data.autoVoiceMode) {
+        
+        // 如果是文字模式，恢复输入框焦点
+        if (!this.data.autoVoiceMode) {
           setTimeout(() => {
+            this.setData({ inputFocus: true });
+          }, 1000);
+        }// 不论语音模式还是文字模式，都播放TTS - 医生问题必须有语音播报
+        setTimeout(() => {
+          if (this.data.autoVoiceMode) {
+            // 语音模式：TTS播报 + 自动录音
             this.playTTSAndStartRecording(nextFollowUp.question);
-          }, 500);
-        }
+          } else {
+            // 文字模式：仅TTS播报，不自动录音
+            this.playTTSOnly(nextFollowUp.question);
+          }
+        }, 500);
         
         return;
       } else {
@@ -1261,20 +1678,28 @@ Page({
       if (this.checkQuestionCondition(nextMainQuestion.condition)) {
         // 进入下一个主题
         await this.addSystemMessage(nextMainQuestion.question, true);
-        
-        this.setData({
+          this.setData({
           currentQuestionKey: nextQuestionKey,
           currentFollowUpIndex: -1,
           isWaitingResponse: false,
           isInputDisabled: false
         });
-
-        // 如果是自动语音模式，播放TTS并开始录音
-        if (this.data.autoVoiceMode) {
+        
+        // 如果是文字模式，恢复输入框焦点
+        if (!this.data.autoVoiceMode) {
           setTimeout(() => {
+            this.setData({ inputFocus: true });
+          }, 1000);
+        }// 不论语音模式还是文字模式，都播放TTS - 医生问题必须有语音播报
+        setTimeout(() => {
+          if (this.data.autoVoiceMode) {
+            // 语音模式：TTS播报 + 自动录音
             this.playTTSAndStartRecording(nextMainQuestion.question);
-          }, 500);
-        }
+          } else {
+            // 文字模式：仅TTS播报，不自动录音
+            this.playTTSOnly(nextMainQuestion.question);
+          }
+        }, 500);
       } else {
         // 条件不满足，跳过这个主题
         this.setData({
@@ -1289,15 +1714,23 @@ Page({
       await this.finishConsultation();
     }
   },
-
   /**
    * 完成问诊并生成总结
    */
   async finishConsultation() {
-    await this.addSystemMessage(
-      "感谢您的配合！所有问题已经回答完毕，正在为您生成健康建议和症状总结...",
-      true
-    );
+    const finishMessage = "感谢您的配合！所有问题已经回答完毕，正在为您生成健康建议和症状总结...";
+    await this.addSystemMessage(finishMessage, true);
+    
+    // 播放完成提示的TTS
+    setTimeout(() => {
+      if (this.data.autoVoiceMode) {
+        // 语音模式：仅TTS播报，不自动录音（问诊已结束）
+        this.playTTSOnly(finishMessage);
+      } else {
+        // 文字模式：仅TTS播报
+        this.playTTSOnly(finishMessage);
+      }
+    }, 1500);
     
     this.setData({
       isConsultFinished: true,
@@ -1313,15 +1746,24 @@ Page({
       // 显示总结
       await this.addSystemMessage(summary, true);
       
+      // 播放总结的TTS
+      setTimeout(() => {
+        this.playTTSOnly(summary);
+      }, 1500);
+      
       // 保存问答记录并跳转
       this.saveRecordsAndNavigate();
       
     } catch (error) {
       console.error('生成总结失败:', error);
-      await this.addSystemMessage(
-        "系统正在整理您的信息，请稍后查看总结页面。",
-        true
-      );
+      const errorMessage = "系统正在整理您的信息，请稍后查看总结页面。";
+      await this.addSystemMessage(errorMessage, true);
+      
+      // 播放错误提示的TTS
+      setTimeout(() => {
+        this.playTTSOnly(errorMessage);
+      }, 1500);
+      
       this.saveRecordsAndNavigate();
     }
   },
@@ -1525,20 +1967,35 @@ Page({
 
   /**
    * 调用ASR云函数
-   */
-  async callASRCloudFunction(audioPath) {
+   */  async callASRCloudFunction(audioPath) {
     return new Promise((resolve, reject) => {
       // 读取音频文件
       wx.getFileSystemManager().readFile({
         filePath: audioPath,
         success: (fileRes) => {
+          // 准备ASR配置
+          const asrConfig = {
+            appid: this.data.llmConfig.asr?.appid || this.data.llmConfig.tencent?.appid || '1365883949',
+            secretid: this.data.llmConfig.asr?.secretid || this.data.llmConfig.tencent?.secretid,
+            secretkey: this.data.llmConfig.asr?.secretkey || this.data.llmConfig.tencent?.secretkey,
+            engine_model_type: this.data.llmConfig.asr?.engine_model_type || "16k_zh",
+            voice_format: this.data.llmConfig.asr?.voice_format || 8, // 8对应mp3
+            filter_dirty: this.data.llmConfig.asr?.filter_dirty || 0,
+            filter_modal: this.data.llmConfig.asr?.filter_modal || 1,
+            filter_punc: this.data.llmConfig.asr?.filter_punc || 0,
+            convert_num_mode: this.data.llmConfig.asr?.convert_num_mode || 1,
+            word_info: this.data.llmConfig.asr?.word_info || 0
+          };
+          
+          // 将音频数据转换为base64
+          const audioBase64 = wx.arrayBufferToBase64(fileRes.data);
+          
           // 调用云函数
           wx.cloud.callFunction({
             name: 'asr',
             data: {
-              audioBuffer: fileRes.data,
-              format: 'mp3',
-              sampleRate: 16000
+              audioData: audioBase64,
+              config: asrConfig
             },
             success: (res) => {
               console.log('ASR云函数调用成功:', res);
@@ -1567,7 +2024,6 @@ Page({
       });
     });
   },
-
   /**
    * 手动开始语音输入（用于文字模式切换到语音模式）
    */
@@ -1576,22 +2032,26 @@ Page({
       return;
     }
 
-    // 检查麦克风权限
-    wx.authorize({
-      scope: 'scope.record',
-      success: () => {
-        this.doStartDirectRecording();
+    // 先检查麦克风权限状态
+    wx.getSetting({
+      success: (res) => {
+        if (res.authSetting['scope.record'] === true) {
+          // 已授权，直接开始录音
+          this.doStartDirectRecording();
+        } else if (res.authSetting['scope.record'] === false) {
+          // 权限被拒绝，引导用户到设置页面
+          this.showPermissionModal();
+        } else {
+          // 未申请过权限，申请权限
+          this.requestRecordPermission(() => {
+            this.doStartDirectRecording();
+          });
+        }
       },
       fail: () => {
-        wx.showModal({
-          title: '权限申请',
-          content: '需要获取麦克风权限进行语音输入',
-          confirmText: '去设置',
-          success: (res) => {
-            if (res.confirm) {
-              wx.openSetting();
-            }
-          }
+        // 获取设置失败，尝试直接申请权限
+        this.requestRecordPermission(() => {
+          this.doStartDirectRecording();
         });
       }
     });
@@ -1887,10 +2347,10 @@ Page({
             "T8-睡眠情绪": "",
             "T9-女性月经": ""
           };
-          
-          this.setData({
+            this.setData({
             messageList: [],
             inputText: "",
+            inputFocus: false, // 重置焦点状态
             currentQuestionKey: "T1-基础信息",
             currentFollowUpIndex: -1,
             isWaitingResponse: false,
@@ -1912,6 +2372,51 @@ Page({
           
           // 重新初始化对话
           this.initializeChat();
+        }
+      }
+    });
+  },
+
+  /**
+   * 申请录音权限
+   */
+  requestRecordPermission(successCallback) {
+    wx.authorize({
+      scope: 'scope.record',
+      success: () => {
+        console.log('录音权限申请成功');
+        if (successCallback) {
+          successCallback();
+        }
+      },
+      fail: () => {
+        console.log('录音权限申请失败');
+        this.showPermissionModal();
+      }
+    });
+  },
+
+  /**
+   * 显示权限申请对话框
+   */
+  showPermissionModal() {
+    wx.showModal({
+      title: '麦克风权限',
+      content: '需要获取麦克风权限进行语音输入，请在设置中开启',
+      confirmText: '去设置',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          wx.openSetting({
+            success: (settingRes) => {
+              if (settingRes.authSetting['scope.record']) {
+                wx.showToast({
+                  title: '权限开启成功',
+                  icon: 'success'
+                });
+              }
+            }
+          });
         }
       }
     });

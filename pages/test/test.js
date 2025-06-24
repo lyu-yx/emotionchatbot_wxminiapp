@@ -1,9 +1,10 @@
 /**
- * DashScope API测试工具
+ * 腾讯云语音服务API测试工具
  * 用于测试LLM、ASR、TTS功能是否正常工作
  */
 
 const LLM_CONFIG = require('../../config/llm-config.js');
+const TencentCloud = require('../../utils/tencent-cloud-final.js');
 
 // 测试页面，用于验证API功能
 Page({
@@ -13,7 +14,6 @@ Page({
     apiKey: '',
     model: ''
   },
-
   onLoad() {
     console.log('API测试页面加载');
     
@@ -23,7 +23,7 @@ Page({
       model: LLM_CONFIG.model
     });
     
-    this.addResult('info', '页面已加载，准备测试API功能');
+    this.addResult('info', '页面已加载，准备测试腾讯云语音服务API功能');
   },
 
   /**
@@ -60,15 +60,18 @@ Page({
     } catch (error) {
       this.addResult('error', `LLM测试失败: ${error.message}`);
     }
-  },
-  /**
-   * 测试TTS API
+  },  /**
+   * 测试TTS API - 使用腾讯云语音合成
    */
   async testTTS() {
-    this.addResult('info', '开始测试TTS API...');
+    this.addResult('info', '开始测试腾讯云TTS API...');
     
     try {
-      await this.callTTSAPI('你好，这是TTS测试');
+      const result = await TencentCloud.callTencentTTS(LLM_CONFIG.tts, '你好，这是腾讯云TTS测试');
+      
+      // 播放音频
+      await TencentCloud.playTencentTTSAudio(result.audioPath);
+      
       this.addResult('success', 'TTS测试成功，音频已播放');
     } catch (error) {
       this.addResult('error', `TTS测试失败: ${error.message}`);
@@ -76,10 +79,10 @@ Page({
   },
 
   /**
-   * 测试ASR API (需要用户录音)
+   * 测试ASR API - 使用腾讯云实时语音识别
    */
   async testASR() {
-    this.addResult('info', '开始测试ASR API，请点击录音按钮...');
+    this.addResult('info', '开始测试腾讯云ASR API，请点击录音按钮...');
     
     try {
       // 启动录音
@@ -90,10 +93,10 @@ Page({
       });
       
       recorderManager.onStop(async (res) => {
-        this.addResult('info', '录音结束，正在识别...');
+        this.addResult('info', '录音结束，正在使用腾讯云识别...');
         
         try {
-          const text = await this.callASRAPI(res.tempFilePath);
+          const text = await TencentCloud.callTencentASR(LLM_CONFIG.asr, res.tempFilePath);
           this.addResult('success', `ASR识别结果: ${text}`);
         } catch (error) {
           this.addResult('error', `ASR识别失败: ${error.message}`);
@@ -122,8 +125,7 @@ Page({
     } catch (error) {
       this.addResult('error', `ASR测试失败: ${error.message}`);
     }
-  },
-  /**
+  },  /**
    * 运行所有测试
    */
   async runAllTests() {
@@ -131,7 +133,7 @@ Page({
     
     this.setData({ testing: true, testResults: [] });
     
-    // 1. 检查API密钥
+    // 1. 检查API密钥和腾讯云配置
     this.checkAPIKey();
     
     // 2. 测试LLM
@@ -140,41 +142,60 @@ Page({
     // 等待1秒
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // 3. 测试TTS
+    // 3. 测试腾讯云TTS
     await this.testTTS();
     
     // 等待1秒
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // 4. 提示ASR测试
-    this.addResult('info', 'ASR测试需要手动点击"测试ASR"按钮进行录音测试');
+    this.addResult('info', '腾讯云ASR测试需要手动点击"测试ASR"按钮进行录音测试');
     
     this.setData({ testing: false });
-    this.addResult('success', '自动测试完成，请手动测试ASR功能');
+    this.addResult('success', '自动测试完成，请手动测试腾讯云ASR功能');
   },
-
   /**
    * 检查API密钥格式
    */
   checkAPIKey() {
     const apiKey = LLM_CONFIG.apiKey;
+    const tencentConfig = LLM_CONFIG.tencent;
     
+    // 检查LLM API密钥
     if (!apiKey || apiKey === 'your-dashscope-api-key-here') {
-      this.addResult('error', 'API密钥未配置，请在llm-config.js中设置');
+      this.addResult('error', 'LLM API密钥未配置，请在llm-config.js中设置');
       return false;
     }
     
     if (!apiKey.startsWith('sk-')) {
-      this.addResult('error', 'API密钥格式错误，应该以sk-开头');
+      this.addResult('error', 'LLM API密钥格式错误，应该以sk-开头');
       return false;
     }
     
     if (apiKey.length < 30) {
-      this.addResult('error', 'API密钥长度可能不正确');
+      this.addResult('error', 'LLM API密钥长度可能不正确');
       return false;
     }
     
-    this.addResult('success', `API密钥格式正确: ${apiKey.substring(0, 8)}...`);
+    this.addResult('success', `LLM API密钥格式正确: ${apiKey.substring(0, 8)}...`);
+    
+    // 检查腾讯云配置
+    if (!tencentConfig.appid || tencentConfig.appid === 'your-tencent-appid') {
+      this.addResult('error', '腾讯云AppID未配置，请在llm-config.js中设置');
+      return false;
+    }
+    
+    if (!tencentConfig.secretid || tencentConfig.secretid === 'your-tencent-secretid') {
+      this.addResult('error', '腾讯云SecretId未配置，请在llm-config.js中设置');
+      return false;
+    }
+    
+    if (!tencentConfig.secretkey || tencentConfig.secretkey === 'your-tencent-secretkey') {
+      this.addResult('error', '腾讯云SecretKey未配置，请在llm-config.js中设置');
+      return false;
+    }
+    
+    this.addResult('success', `腾讯云配置正确: AppID=${tencentConfig.appid}`);
     return true;
   },
 
@@ -218,118 +239,7 @@ Page({
         }
       });
     });
-  },
-  /**
-   * 调用TTS API
-   */
-  async callTTSAPI(text) {
-    const ttsConfig = LLM_CONFIG.tts;
-    
-    return new Promise((resolve, reject) => {
-      wx.request({
-        url: ttsConfig.baseUrl,
-        method: 'POST',
-        header: {
-          'Authorization': `Bearer ${LLM_CONFIG.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        data: {
-          model: ttsConfig.model,
-          input: {
-            text: text
-          },
-          parameters: {
-            voice: ttsConfig.voice,
-            format: ttsConfig.format,
-            sample_rate: ttsConfig.sampleRate,
-            volume: ttsConfig.volume,
-            speech_rate: ttsConfig.speechRate,
-            pitch_rate: ttsConfig.pitchRate
-          }
-        },
-        timeout: 15000,
-        success: (res) => {
-          if (res.statusCode === 200 && res.data.output && res.data.output.audio_url) {
-            // 播放音频测试
-            this.playTestAudio(res.data.output.audio_url, resolve, reject);
-          } else {
-            reject(new Error(`TTS API错误: ${JSON.stringify(res.data)}`));
-          }
-        },
-        fail: (err) => {
-          reject(new Error(`TTS请求失败: ${err.errMsg}`));
-        }
-      });
-    });
-  },
-
-  /**
-   * 调用ASR API
-   */
-  async callASRAPI(audioFilePath) {
-    const asrConfig = LLM_CONFIG.asr;
-    
-    return new Promise((resolve, reject) => {
-      wx.uploadFile({
-        url: asrConfig.baseUrl,
-        filePath: audioFilePath,
-        name: 'audio',
-        header: {
-          'Authorization': `Bearer ${LLM_CONFIG.apiKey}`
-        },
-        formData: {
-          'model': asrConfig.model,
-          'format': asrConfig.format,
-          'sample_rate': asrConfig.sampleRate,
-          'enable_punctuation': asrConfig.enablePunctuation,
-          'enable_itn': asrConfig.enableITN
-        },
-        success: (res) => {
-          try {
-            const data = JSON.parse(res.data);
-            if (data.output && data.output.text) {
-              resolve(data.output.text);
-            } else {
-              reject(new Error(`ASR API错误: ${res.data}`));
-            }
-          } catch (error) {
-            reject(new Error(`ASR响应解析失败: ${error.message}`));
-          }
-        },
-        fail: (err) => {
-          reject(new Error(`ASR请求失败: ${err.errMsg}`));
-        }
-      });
-    });
-  },
-
-  /**
-   * 播放测试音频
-   */
-  playTestAudio(audioUrl, resolve, reject) {
-    const audioContext = wx.createInnerAudioContext();
-    
-    audioContext.src = audioUrl;
-    audioContext.onPlay(() => {
-      console.log('TTS测试音频开始播放');
-    });
-    
-    audioContext.onEnded(() => {
-      console.log('TTS测试音频播放完成');
-      audioContext.destroy();
-      resolve();
-    });
-    
-    audioContext.onError((err) => {
-      console.error('TTS测试音频播放失败:', err);
-      audioContext.destroy();
-      reject(new Error('音频播放失败'));
-    });
-    
-    audioContext.play();
-  },
-
-  /**
+  },  /**
    * 清空测试结果
    */
   clearResults() {
@@ -337,13 +247,15 @@ Page({
   },
 
   /**
-   * 复制API密钥（去敏感化）
+   * 复制API配置信息（去敏感化）
    */
   copyAPIInfo() {
     const info = `API配置信息:
-BaseURL: ${LLM_CONFIG.baseUrl}
-Model: ${LLM_CONFIG.model}
-API Key: ${LLM_CONFIG.apiKey.substring(0, 8)}...
+LLM BaseURL: ${LLM_CONFIG.baseUrl}
+LLM Model: ${LLM_CONFIG.model}
+LLM API Key: ${LLM_CONFIG.apiKey.substring(0, 8)}...
+腾讯云AppID: ${LLM_CONFIG.tencent.appid}
+腾讯云SecretId: ${LLM_CONFIG.tencent.secretid.substring(0, 8)}...
 功能开关: LLM(${LLM_CONFIG.enableRelevanceCheck}), ASR(${LLM_CONFIG.enableASR}), TTS(${LLM_CONFIG.enableTTS})`;
     
     wx.setClipboardData({

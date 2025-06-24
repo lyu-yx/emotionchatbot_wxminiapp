@@ -1,0 +1,342 @@
+/* 实时语音识别测试页面样式 */
+
+.test-container {
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* 头部 */
+.test-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* 状态面板 */
+.status-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.status-item:last-child {
+  margin-bottom: 0;
+}
+
+.status-label {
+  font-size: 16px;
+  color: #333;
+}
+
+.status-value {
+  font-size: 16px;
+  font-weight: bold;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.status-value.connected {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-value.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-value.disconnected {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.status-value.recording {
+  background-color: #fff3cd;
+  color: #856404;
+  animation: pulse 1.5s infinite;
+}
+
+.status-value.stopped {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+/* 结果面板 */
+.result-panel {
+  margin-bottom: 20px;
+}
+
+.result-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.result-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.result-content {
+  min-height: 60px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 2px dashed #ddd;
+  display: flex;
+  align-items: center;
+}
+
+.result-content.realtime {
+  background-color: #e8f5e8;
+  border-color: #28a745;
+}
+
+.result-content.final {
+  background-color: #e3f2fd;
+  border-color: #007bff;
+}
+
+.result-text {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+  word-break: break-all;
+}
+
+/* 控制面板 */
+.control-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.test-btn {
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.test-btn.primary {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+}
+
+.test-btn.secondary {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+}
+
+.test-btn.info {
+  background: linear-gradient(135deg, #17a2b8, #138496);
+  color: white;
+}
+
+.test-btn.warning {
+  background: linear-gradient(135deg, #ffc107, #e0a800);
+  color: #212529;
+}
+
+.test-btn:disabled {
+  opacity: 0.5;
+  transform: none !important;
+}
+
+.test-btn:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+.btn-icon {
+  font-size: 24px;
+}
+
+.btn-text {
+  font-size: 14px;
+}
+
+/* 日志面板 */
+.log-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.log-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.log-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.log-count {
+  font-size: 12px;
+  color: #666;
+  margin-left: 8px;
+}
+
+.log-content {
+  max-height: 300px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #f8f9fa;
+}
+
+.log-empty {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-text {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.log-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 4px solid;
+}
+
+.log-item.info {
+  background-color: #d1ecf1;
+  border-left-color: #17a2b8;
+}
+
+.log-item.success {
+  background-color: #d4edda;
+  border-left-color: #28a745;
+}
+
+.log-item.error {
+  background-color: #f8d7da;
+  border-left-color: #dc3545;
+}
+
+.log-time {
+  font-size: 12px;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.log-message {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+}
+
+/* 帮助面板 */
+.help-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.help-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.help-item {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  padding-left: 16px;
+  position: relative;
+}
+
+.help-item::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #007bff;
+  font-weight: bold;
+}
+
+/* 动画 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+  .test-container {
+    padding: 16px;
+  }
+  
+  .control-panel {
+    grid-template-columns: 1fr;
+  }
+  
+  .test-btn {
+    padding: 12px;
+  }
+  
+  .btn-icon {
+    font-size: 20px;
+  }
+  
+  .btn-text {
+    font-size: 12px;
+  }
+}

@@ -18,7 +18,11 @@
       <view wx:if="{{isLoading}}" class="loading">
         <text>正在生成总结...</text>
       </view>
-      <text wx:else class="summary-text">{{summary}}</text>
+      <view wx:else class="summary-wrapper">
+        <view class="summary-text-container">
+          <rich-text class="summary-rich-text" nodes="{{parsedSummary}}"></rich-text>
+        </view>
+      </view>
     </view>
   </view>
 

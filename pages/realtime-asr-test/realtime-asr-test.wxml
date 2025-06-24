@@ -1,0 +1,121 @@
+<view class="test-container">
+  <view class="test-header">
+    <text class="title">实时语音识别测试</text>
+    <text class="subtitle">测试腾讯云实时ASR功能</text>
+  </view>
+
+  <!-- 状态显示 -->
+  <view class="status-panel">
+    <view class="status-item">
+      <text class="status-label">连接状态:</text>
+      <text class="status-value {{connectionStatus === '已连接' ? 'connected' : (connectionStatus === '连接失败' ? 'error' : 'disconnected')}}">
+        {{connectionStatus}}
+      </text>
+    </view>
+    <view class="status-item">
+      <text class="status-label">录音状态:</text>
+      <text class="status-value {{isRecording ? 'recording' : 'stopped'}}">
+        {{isRecording ? '录音中' : '已停止'}}
+      </text>
+    </view>
+  </view>
+
+  <!-- 实时识别结果 -->
+  <view class="result-panel">
+    <view class="result-section">
+      <text class="result-title">实时识别结果</text>
+      <view class="result-content realtime">
+        <text class="result-text">{{realtimeText || '暂无识别结果'}}</text>
+      </view>
+    </view>
+    
+    <view class="result-section">
+      <text class="result-title">最终识别结果</text>
+      <view class="result-content final">
+        <text class="result-text">{{recognitionResult || '暂无最终结果'}}</text>
+      </view>
+    </view>
+  </view>
+  <!-- 控制按钮 -->
+  <view class="control-panel">
+    <button 
+      class="test-btn primary" 
+      bindtap="startRealtimeTest"
+      disabled="{{isRecording}}"
+    >
+      <text class="btn-icon">🎤</text>
+      <text class="btn-text">开始实时识别</text>
+    </button>
+    
+    <button 
+      class="test-btn secondary" 
+      bindtap="testSignature"
+      disabled="{{isRecording}}"
+    >
+      <text class="btn-icon">🔐</text>
+      <text class="btn-text">测试签名生成</text>
+    </button>
+    
+    <button 
+      class="test-btn secondary" 
+      bindtap="stopRealtimeTest"
+      disabled="{{!isRecording}}"
+    >
+      <text class="btn-icon">⏹️</text>
+      <text class="btn-text">停止识别</text>
+    </button>
+    
+    <button 
+      class="test-btn info" 
+      bindtap="testCloudFunction"
+      disabled="{{isRecording}}"
+    >
+      <text class="btn-icon">☁️</text>
+      <text class="btn-text">测试云函数</text>
+    </button>
+    
+    <button 
+      class="test-btn warning" 
+      bindtap="clearResults"
+      disabled="{{isRecording}}"
+    >
+      <text class="btn-icon">🗑️</text>
+      <text class="btn-text">清除结果</text>
+    </button>
+  </view>
+
+  <!-- 测试日志 -->
+  <view class="log-panel">
+    <view class="log-header">
+      <text class="log-title">测试日志</text>
+      <text class="log-count">({{testResults.length}}条)</text>
+    </view>
+    
+    <scroll-view class="log-content" scroll-y="true">
+      <view wx:if="{{testResults.length === 0}}" class="log-empty">
+        <text class="empty-text">暂无测试日志</text>
+      </view>
+      
+      <view 
+        wx:for="{{testResults}}" 
+        wx:key="id" 
+        class="log-item {{item.type}}"
+      >
+        <view class="log-time">{{item.timestamp}}</view>
+        <view class="log-message">{{item.message}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 使用说明 -->
+  <view class="help-panel">
+    <text class="help-title">使用说明</text>
+    <view class="help-content">
+      <text class="help-item">1. 首先测试云函数连接是否正常</text>
+      <text class="help-item">2. 点击"开始实时识别"按钮</text>
+      <text class="help-item">3. 授权录音权限后开始说话</text>
+      <text class="help-item">4. 观察实时识别结果和最终结果</text>
+      <text class="help-item">5. 系统会自动检测停止说话并结束识别</text>
+    </view>
+  </view>
+</view>

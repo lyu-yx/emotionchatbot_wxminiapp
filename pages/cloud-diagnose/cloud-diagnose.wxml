@@ -1,0 +1,97 @@
+<!--云开发诊断页面-->
+<view class="container">
+  <!-- 标题 -->
+  <view class="title">云开发诊断工具</view>
+  
+  <!-- 基本信息 -->
+  <view class="section">
+    <view class="section-title">基本信息</view>
+    <view class="info-item">
+      <text class="label">小程序AppId:</text>
+      <text class="value">{{appId}}</text>
+    </view>
+    <view class="info-item">
+      <text class="label">云开发环境ID:</text>
+      <text class="value">{{cloudEnvId}}</text>
+    </view>
+    <view class="info-item">
+      <text class="label">基础库版本:</text>
+      <text class="value">{{sdkVersion}}</text>
+    </view>
+    <view class="info-item">
+      <text class="label">当前环境:</text>
+      <text class="value">{{envType}}</text>
+    </view>
+  </view>
+
+  <!-- 诊断结果 -->
+  <view class="section">
+    <view class="section-title">诊断结果</view>
+    <view wx:for="{{diagnoseResults}}" wx:key="name" class="result-item">
+      <view class="result-name">{{item.name}}</view>
+      <view class="result-status {{item.status ? 'success' : 'error'}}">
+        {{item.status ? '✓ 通过' : '✗ 失败'}}
+      </view>
+      <view wx:if="{{!item.status}}" class="result-fix">
+        建议: {{item.fix}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能测试 -->
+  <view class="section">
+    <view class="section-title">功能测试</view>
+    <view class="test-buttons">
+      <button class="test-btn" bindtap="testCloudFunction">
+        测试云函数
+      </button>
+      <button class="test-btn" bindtap="testDatabase">
+        测试数据库
+      </button>
+      <button class="test-btn" bindtap="testTTSProxy">
+        测试TTS代理
+      </button>
+    </view>
+    
+    <view wx:if="{{testResults.length > 0}}" class="test-results">
+      <view wx:for="{{testResults}}" wx:key="index" class="test-result">
+        <view class="test-name">{{item.name}}</view>
+        <view class="test-status {{item.success ? 'success' : 'error'}}">
+          {{item.success ? '成功' : '失败'}}
+        </view>
+        <view class="test-message">{{item.message}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="actions">
+    <button class="action-btn primary" bindtap="runDiagnose">
+      重新诊断
+    </button>
+    <button class="action-btn" bindtap="reinitCloud">
+      重新初始化云开发
+    </button>
+    <button class="action-btn" bindtap="showFixGuide">
+      查看修复指南
+    </button>
+  </view>
+
+  <!-- 修复指南弹窗 -->
+  <view wx:if="{{showGuide}}" class="modal-overlay" bindtap="hideFixGuide">
+    <view class="modal-content" catchtap="">
+      <view class="modal-title">云开发修复指南</view>
+      <scroll-view class="modal-body" scroll-y="true">
+        <view wx:for="{{fixGuide}}" wx:key="issue" class="guide-item">
+          <view class="guide-issue">问题: {{item.issue}}</view>
+          <view class="guide-solutions">
+            <view wx:for="{{item.solutions}}" wx:for-item="solution" wx:key="*this" class="solution">
+              {{solution}}
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <button class="modal-close" bindtap="hideFixGuide">关闭</button>
+    </view>
+  </view>
+</view>

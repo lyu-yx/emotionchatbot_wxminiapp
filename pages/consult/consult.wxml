@@ -102,6 +102,8 @@
           value="{{inputText}}"
           bindinput="onInput"
           bindconfirm="sendMessage"
+          focus="{{inputFocus}}"
+          bindblur="onInputBlur"
           disabled="{{isInputDisabled || isConsultFinished}}"
           maxlength="500"
           auto-height
@@ -121,6 +123,14 @@
 
     <!-- 语音输入模式 -->
     <view wx:if="{{inputMode === '语音输入'}}" class="voice-input-container">
+      <!-- 实时语音识别结果显示 -->
+      <view wx:if="{{showRealtimeResult && realtimeRecognitionText}}" class="realtime-result-display">
+        <view class="realtime-text">
+          <text class="realtime-label">实时识别：</text>
+          <text class="realtime-content">{{realtimeRecognitionText}}</text>
+        </view>
+      </view>
+      
       <view class="voice-input-display">
         <textarea 
           class="voice-display" 
@@ -138,6 +148,10 @@
             <text class="status-icon">🔊</text>
             <text class="status-text">医生播报中...</text>
           </view>
+          <view wx:elif="{{isRealtimeRecording}}" class="status-item realtime-recording">
+            <text class="status-icon">🎙️</text>
+            <text class="status-text">实时识别中，请说话...</text>
+          </view>
           <view wx:elif="{{isRecording}}" class="status-item recording">
             <text class="status-icon">🎤</text>
             <text class="status-text">正在录音中，请回答问题</text>
@@ -148,7 +162,7 @@
           </view>
           <view wx:else class="status-item ready">
             <text class="status-icon">✨</text>
-            <text class="status-text">智能语音模式已激活</text>
+            <text class="status-text">{{useRealtimeASR ? '实时语音识别模式已激活' : '智能语音模式已激活'}}</text>
           </view>
         </view>
         

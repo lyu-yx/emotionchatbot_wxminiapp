@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "启动小程序开发者工具预览",
+			"type": "shell",
+			"command": "echo '请在微信开发者工具中预览修改后的小程序'",
+			"group": "build"
+		}
+	]
+}

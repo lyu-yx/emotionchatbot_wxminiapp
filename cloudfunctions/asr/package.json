@@ -1,0 +1,10 @@
+{
+  "name": "asr",
+  "version": "1.0.0",
+  "description": "腾讯云ASR语音识别云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3",
+    "tencentcloud-sdk-nodejs": "^4.0.614"
+  }
+}

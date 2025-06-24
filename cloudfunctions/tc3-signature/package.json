@@ -1,0 +1,9 @@
+{
+  "name": "tc3-signature",
+  "version": "1.0.0",
+  "description": "腾讯云TC3签名生成云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

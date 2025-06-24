@@ -57,5 +57,41 @@ Page({
         });
       }
     });
+  },
+
+  goToDiagnose() {
+    console.log('进入云开发诊断页面');
+    
+    wx.navigateTo({ 
+      url: '/pages/cloud-diagnose/cloud-diagnose',
+      success: function() {
+        console.log('云开发诊断页面跳转成功');
+      },
+      fail: function(err) {
+        console.error('云开发诊断页面跳转失败:', err);
+        wx.showToast({
+          title: '页面跳转失败',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  goToDiagnose() {
+    console.log('进入云开发诊断页面');
+    
+    wx.navigateTo({ 
+      url: '/pages/cloud-diagnose/cloud-diagnose',
+      success: function() {
+        console.log('云开发诊断页面跳转成功');
+      },
+      fail: function(err) {
+        console.error('云开发诊断页面跳转失败:', err);
+        wx.showToast({
+          title: '页面跳转失败',
+          icon: 'none'
+        });
+      }
+    });
   }
 })

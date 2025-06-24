@@ -59,6 +59,12 @@
       <text class="test-text">API功能测试</text>
     </button>
 
+    <!-- 云开发诊断按钮 -->
+    <button class="diagnose-btn" bindtap="goToDiagnose">
+      <text class="diagnose-icon">🔧</text>
+      <text class="diagnose-text">云开发诊断</text>
+    </button>
+
     <!-- 底部提示 -->
     <view class="bottom-tips">
       <text class="tip-text">请根据医生的问题如实回答</text>

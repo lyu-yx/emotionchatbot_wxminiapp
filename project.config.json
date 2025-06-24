@@ -31,5 +31,10 @@
   },
   "appid": "wxfab8b135f1b0013b",
   "editorSetting": {},
-  "libVersion": "3.8.9"
+  "libVersion": "3.8.9",
+  "cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "miniprogramRoot": "./",
+  "cloudbaseRoot": "./",
+  "cloudcontainerRoot": "./"
 }
