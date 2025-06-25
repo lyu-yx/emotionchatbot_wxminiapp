@@ -432,7 +432,7 @@ Page({
       // TTS播放完成后，自动开始录音
       setTimeout(() => {
         this.startAutoVoiceRecording();
-      }, 500); // 0.5秒延迟后开始录音
+      }, 100); // 0.1秒延迟后开始录音
       
     } catch (error) {
       console.error('腾讯云TTS播放失败:', error);
@@ -532,6 +532,7 @@ Page({
       const audioContext = wx.createInnerAudioContext();
       
       audioContext.src = audioUrl;
+      this.ttsPlayer = audioContext; // 保存播放器实例，供外部 stop 使用
       audioContext.onPlay(() => {
         console.log('TTS音频开始播放');
       });
@@ -539,17 +540,20 @@ Page({
       audioContext.onEnded(() => {
         console.log('TTS音频播放完成');
         audioContext.destroy();
+        this.ttsPlayer = null; // 清除引用
         resolve();
       });
       
       audioContext.onError((err) => {
         console.error('TTS音频播放失败:', err);
         audioContext.destroy();
+        this.ttsPlayer = null; // 清除引用
         reject(err);
       });
       
       audioContext.play();
-    });  },
+    });  
+  },
 
   /**
    * 使用腾讯云TTS播放语音
@@ -2231,11 +2235,11 @@ Page({
         duration: 1500
       });
       
-      // 如果切换到语音模式且当前有问题在等待回答，自动开始录音
+      // 如果切换到语音模式且当前有问题在等待回答，自动开始录音（0.5s后）
       if (!this.data.isConsultFinished && !this.data.isWaitingResponse) {
         setTimeout(() => {
           this.startAutoVoiceRecording();
-        }, 1500);
+        }, 500);
       }
     } else {
       wx.showToast({
@@ -2255,6 +2259,14 @@ Page({
       content: '重新开始将清空当前所有对话记录',
       success: (res) => {
         if (res.confirm) {
+          // 停止播放（如果正在播放）
+          if (this.data.isTTSPlaying && this.ttsPlayer && this.ttsPlayer.stop) {
+            this.ttsPlayer.stop(); // 停止腾讯云TTS播放
+            this.ttsPlayer.destroy();
+            this.ttsPlayer = null;
+            this.setData({ isTTSPlaying: false });
+          }   
+          
           // 停止录音（如果正在录音）
           if (this.data.isRecording && this.recorderManager) {
             this.recorderManager.stop();
