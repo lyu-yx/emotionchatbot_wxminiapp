@@ -100,8 +100,7 @@
     <!-- 输入模式切换 -->
     <view class="input-mode-switch">
       <button 
-        class="mode-btn {{inputMode === '文字输入' ? 'active' : ''}}" 
-        bindtap="switchInputMode"
+        class="mode-btn {{inputMode === '文字输入' ? 'active' : ''}}"        
         data-mode="文字输入"
       >
         <text class="mode-icon">✏️</text>
@@ -109,7 +108,6 @@
       </button>
       <button 
         class="mode-btn {{inputMode === '语音输入' ? 'active' : ''}}" 
-        bindtap="switchInputMode"
         data-mode="语音输入"
       >
         <text class="mode-icon">🎤</text>

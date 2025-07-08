@@ -13,13 +13,13 @@ const LLM_CONFIG = {
   baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",  // 通义千问兼容API
   
   // API密钥 - DashScope统一密钥，用于LLM
-  apiKey: "",
+  apiKey: "sk-cca081700e614b30a601d3599f94e5f4",
 
   // 腾讯云配置
   tencent: {
     appid: "1365883949",                // 腾讯云语音服务AppId（已修复）
-    secretid: "",  // 腾讯云SecretId
-    secretkey: "", // 腾讯云SecretKey
+    secretid: "AKIDrbHqUwBC2ta4LVWYalqjS2QbdVk5IbxE",  // 腾讯云SecretId
+    secretkey: "FIA1hCWdWCfO8hCYhNq8D5kElCRWgkcK", // 腾讯云SecretKey
     token: "",                          // 临时密钥Token，可选
   },
 
@@ -29,8 +29,8 @@ const LLM_CONFIG = {
   maxTokens: 1000,              // 最大回答长度  // ASR配置（语音识别）- 腾讯云实时语音识别
   asr: {
     appid: "1365883949",                 // 腾讯云语音服务AppId（已修复）
-    secretid: "",   // 腾讯云SecretId
-    secretkey: "", // 腾讯云SecretKey
+    secretid: "AKIDrbHqUwBC2ta4LVWYalqjS2QbdVk5IbxE",   // 腾讯云SecretId
+    secretkey: "FIA1hCWdWCfO8hCYhNq8D5kElCRWgkcK", // 腾讯云SecretKey
     token: "",                           // 临时密钥Token，可选
     engine_model_type: "16k_zh",         // 引擎模型类型：16k_zh中文、8k_zh中文、16k_en英文
     voice_format: 1,                     // 音频格式：1-pcm（实时识别推荐），8-mp3
@@ -48,8 +48,8 @@ const LLM_CONFIG = {
   // TTS配置（语音合成）- 腾讯云语音合成
   tts: {
     appid: "1365883949",                 // 腾讯云语音服务AppId（已修复）
-    secretid: "",   // 腾讯云SecretId  
-    secretkey: "", // 腾讯云SecretKey
+    secretid: "AKIDrbHqUwBC2ta4LVWYalqjS2QbdVk5IbxE",   // 腾讯云SecretId  
+    secretkey: "FIA1hCWdWCfO8hCYhNq8D5kElCRWgkcK", // 腾讯云SecretKey
     token: "",                           // 临时密钥Token，可选
     voicetype: 1002,                     // 音色：1002-女声温和，1001-女声甜美，1003-男声磁性
     language: 1,                         // 主语言类型：1-中文（默认），2-英文
