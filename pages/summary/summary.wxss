@@ -71,12 +71,13 @@
 
 .section-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
   margin-bottom: 25rpx;
   padding-bottom: 20rpx;
   border-bottom: 3rpx solid #ecf0f1;
   position: relative;
+  gap: 20rpx;
 }
 
 .section-header::after {
@@ -104,7 +105,7 @@
 
 .action-buttons {
   display: flex;
-  gap: 12rpx;
+  gap: 20rpx;
 }
 
 .action-btn {
@@ -112,14 +113,17 @@
   color: white;
   border: none;
   border-radius: 15rpx;
-  padding: 12rpx 20rpx;
-  font-size: 24rpx;
+  padding: 30rpx 5rpx;
+  font-size: 40rpx;
   margin: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6rpx;
   box-shadow: 0 4rpx 15rpx rgba(102, 126, 234, 0.3);
   transition: all 0.3s ease;
+  width: 80rpx; /* 缩小按钮宽度 */
+  box-sizing: border-box;
 }
 
 .action-btn:active {
@@ -496,8 +500,12 @@
     flex-direction: column;
   }
   
+  /* 保持按钮水平布局 */
   .action-buttons {
-    flex-direction: column;
-    gap: 8rpx;
+    flex-direction: row;
+    gap: 20rpx;
+  }
+  .action-btn {
+    width: 70rpx;
   }
 }

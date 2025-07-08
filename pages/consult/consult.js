@@ -144,7 +144,7 @@ Page({
         condition: "gender == 'female'",
         followUps: [
           {
-            condition: "始终提问",
+            condition: "gender == 'female'",
             question: "白带情况如何？",
             fields: ["leucorrhea"]
           }
@@ -230,11 +230,14 @@ Page({
       "T8-睡眠情绪": "",
       "T9-女性月经": ""
     },
-      messageList: [],               // 对话消息列表
+    messageList: [],               // 对话消息列表
     inputText: "",                 // 当前输入文本
     inputFocus: false,             // 输入框焦点状态
-    inputMode: wx.getStorageSync("inputMode") || "语音输入",
+    inputMode: wx.getStorageSync("inputMode") || "文字输入",
     showVoiceInput: false,         // 控制语音输入组件显示
+    currentVideo: '',              //当前播放的视频
+    showImage: false,
+    imageUrl: '/cover.jpg', // 统一封面图
     currentQuestionKey: "T1-基础信息", // 当前问题键值
     currentFollowUpIndex: -1,      // 当前追问索引
     isWaitingResponse: false,      // 是否等待系统回复
@@ -247,25 +250,72 @@ Page({
     silenceTimer: null,            // 静音检测定时器
     silenceThreshold: 1500,        // 静音阈值1.5秒
     autoVoiceMode: false,          // 自动语音模式
-    
+    isPreparingRecording: false,   // 防止重复录音启动
+    videoEndedCallback: null,      // 播放结束后触发的 callback
     // 实时语音识别相关
+    videoEndedCallback: null,      // 播放结束后触发的 callback
     realtimeASR: null,             // 实时语音识别实例
     isRealtimeRecording: false,    // 是否正在实时录音
     realtimeRecognitionText: "",   // 实时识别文本
     showRealtimeResult: false,     // 是否显示实时识别结果
     useRealtimeASR: true,          // 是否使用实时语音识别
       // LLM配置
-    llmConfig: LLM_CONFIG
+    llmConfig: LLM_CONFIG,
+    
+    videoMap: {
+      "首先，请告诉我您的性别和年龄？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome.mp4",
+      "您有没有慢性病，比如高血压、高血糖、高血脂、胃病等？是否在治疗？是否有药物过敏？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T1基础信息追问1.mp4",
+      "最近有没有发烧或怕冷？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热主问题.mp4",
+      "发烧大概多少度？哪个时间段最明显？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问1.mp4",
+      "穿衣服后能缓解怕冷吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问2.mp4",
+      "有没有出汗？是清水汗还是黏汗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问3.mp4",// 这段视频出问题
+      "最近有没有头痛或头晕？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕主问题.mp4",
+      "头痛在什么部位？是胀痛、刺痛还是抽痛？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问1.mp4",
+      "是头部昏沉还是天旋地转？有没有伴随恶心呕吐？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问2.mp4",
+      "眼睛有没有不适，比如干涩、发痒、流泪或视力问题？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官主问题.mp4",
+      "请问是否有耳鸣或听力问题？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问1.mp4",
+      "鼻子是否有鼻塞、流涕？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问2.mp4",
+      "喉咙是否干、痒、疼或堵？最近有没有咳嗽？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽主问题.mp4",
+      "咳嗽是间断还是持续？有痰吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问1.mp4",
+      "痰的颜色和质地如何？容易咳出吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问2.mp4",
+      "是否伴随胸闷或心悸？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问3.mp4",
+      "最近食欲如何？有没有偏好吃冷食或热食？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水主问题.mp4",
+      "有没有口苦、口干、反酸等口腔症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问1.mp4",
+      "平时喝水习惯是怎样的？喜欢热水还是冷水？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问2.mp4",
+      "小便通畅吗？颜色如何？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛主问题.mp4",
+      "大便频率和性状如何？有没有腹痛？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛追问1.mp4",
+      "最近睡眠质量如何？情绪状态怎么样？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪主问题.mp4",
+      "有没有皮肤问题，比如瘙痒、红疹等？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪追问1.mp4",
+      "月经周期正常吗？颜色和量如何？是否痛经？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经主问题.mp4",
+      "白带情况如何？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经追问1.mp4",
+      "您好！我是您的智能问诊助手，接下来我会通过提问来了解您的健康状况，这样能帮助医生更好地了解您的情况。准备好了吗？我们开始第一个问题。": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome.mp4",
+      "感谢您的配合！所有问题已经回答完毕，正在为您生成健康建议和症状总结...": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/finish.mp4",
+      "您的回答似乎与问题不太相关。": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/irrelevant_answer.mp4"
+    }
   },
+  
+  onVideoEnd() {
+      console.log('视频播放已结束');
+      this.setData({ isTTSPlaying: false , showImage: true });
+
+    if (this.videoEndedCallback) {
+      this.videoEndedCallback(); // 通知 playVideoOnly 的 promise 完成
+      this.videoEndedCallback = null; // 清除引用，防止后续错误触发
+    }
+  },
+
   onLoad() {
     console.log('问诊页面开始加载');
-    
+    // 重新获取输入模式并更新数据
+    const inputMode = wx.getStorageSync("inputMode") || "文字输入";
+    this.setData({ inputMode });
     // 先初始化语音相关设置
     this.initVoiceSettings();
     
     // 然后初始化对话，添加第一条系统消息
     this.initializeChat();
   },
+
   /**
    * 初始化语音设置
    */
@@ -281,8 +331,67 @@ Page({
       });
       console.log('开启自动语音模式');
       console.log('实时语音识别:', enableRealtimeASR ? '启用' : '禁用');
+    }else {
+      this.setData({ 
+        autoVoiceMode: false,
+        useRealtimeASR: false
+      });
+      console.log('开启文字输入模式');
     }
-  },/**
+  },
+  /**
+   * 获取视频时长
+   * @returns {number} 视频时长，单位毫秒
+   */
+  getVideoDuration(url) {
+    if (!this.data.currentQuestion) {
+      return 16000;
+    }
+
+    // 先匹配当前问题到视频URL
+    const matchedVideo = Object.entries(this.data.videoMap).find(([questionText]) =>
+      this.data.currentQuestion.question.includes(questionText)
+    );
+
+    // 视频URL -> 时长 映射
+    const videoDurations = {
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome.mp4': 16000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T1基础信息追问1.mp4': 8000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热主问题.mp4': 3000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问1.mp4': 5000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问2.mp4': 4000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问3.mp4': 5000, //这段视频出问题
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕主问题.mp4': 3000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问1.mp4': 7000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问2.mp4': 6000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官主问题.mp4': 7000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问1.mp4': 4000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问2.mp4': 4000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽主问题.mp4': 5000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问1.mp4': 5000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问2.mp4': 4000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问3.mp4': 4000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水主问题.mp4': 5000, 
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问1.mp4': 5000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问2.mp4': 6000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛主问题.mp4': 4000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛追问1.mp4': 5000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪主问题.mp4': 4000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪追问1.mp4': 6000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经主问题.mp4': 5000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经追问1.mp4': 4000,        
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/finish.mp4': 11000,
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/irrelevant_answer.mp4': 6000
+    };
+
+    if (matchedVideo) {
+      return videoDurations[url] || 16000;
+    }
+
+    return 16000;
+  },
+
+  /**
    * 初始化聊天对话
    */
   initializeChat() {
@@ -309,28 +418,80 @@ Page({
 
     this.setData({
       messageList: [welcomeMessage, firstQuestionMessage]
-    });    // 滚动到最新消息
+    });
+
+    // 滚动到最新消息
     this.scrollToBottom();
-      console.log('初始化聊天完成，检查是否需要TTS播报');
+    
+    console.log('初始化聊天完成，检查是否需要视频播报');
     console.log('当前autoVoiceMode:', this.data.autoVoiceMode);
     console.log('当前inputMode:', this.data.inputMode);
     
-    // 不论语音模式还是文字模式，都播放TTS - 医生问题必须有语音播报
-    console.log('开始TTS播报初始化消息（适用于所有模式）');
+    // 播放欢迎视频和第一个问题的视频
     const fullWelcomeText = `${welcomeMessage.text} ${currentQuestion.question}`;
-    console.log('TTS播报内容:', fullWelcomeText);
-      if (this.data.autoVoiceMode) {
-      // 语音模式：TTS播报 + 自动录音
-      this.playTTSAndStartRecording(fullWelcomeText);
+    console.log('视频播报内容:', fullWelcomeText);
+    
+    if (this.data.autoVoiceMode) {
+      // 语音模式：视频播报 + 自动录音
+      this.playVideoAndStartRecording(fullWelcomeText);
     } else {
-      // 文字模式：仅TTS播报，不自动录音
-      this.playTTSOnly(fullWelcomeText);
+      // 文字模式：仅视频播报
+      this.playVideoOnly(fullWelcomeText);
       
       // 文字模式下，延迟给输入框设置焦点
       setTimeout(() => {
         this.setData({ inputFocus: true });
-      }, 2000); // TTS播放完毕后设置焦点
+      }, 2000);
     }
+  },
+
+  /**
+   * 播放视频并自动开始录音 - 语音模式专用
+   * @param {string} text - 要播放的文本
+   */
+  async playVideoAndStartRecording(text) {
+    console.log('进入playVideoAndStartRecording方法（语音模式）');
+    console.log('要播放的文本:', text);
+    
+    try {
+      this.setData({ isTTSPlaying: true });
+      await this.playVideoOnly(text); // 等待视频播放完成
+      console.log('视频播放完成，开始自动录音');
+      this.startAutoVoiceRecording(); // 播放结束 -> 录音
+    } catch (error) {
+      console.error('视频播放失败:', error);
+      // 失败也要开始录音
+      this.startAutoVoiceRecording();
+    }
+  },
+
+  /**
+   * 仅播放视频 - 适用于文字输入模式
+   * @param {string} text - 要播放的文本
+   */
+  async playVideoOnly(text) {
+    console.log('进入playVideoOnly方法（视频播报）');
+    console.log('要播放的文本:', text);
+    return new Promise((resolve) => {
+      const matchedVideo = Object.entries(this.data.videoMap).find(([key]) =>
+        text.includes(key)
+      );
+    
+      if (matchedVideo) {
+        const videoUrl = matchedVideo[1];
+        this.videoEndedCallback = resolve; // 让 onVideoEnded 调用它
+        this.setData({
+          currentVideo: videoUrl,
+          isTTSPlaying: true,
+          showImage: false
+        });
+      }else {
+        // 没有匹配的视频，使用默认延时 1500ms
+        setTimeout(() => {
+          resolve();
+        }, 1500);
+      }
+    });
   },
 
   /**
@@ -361,291 +522,56 @@ Page({
     
     return null;
   },
+
   /**
    * 检查问题条件是否满足
    */
   checkQuestionCondition(condition) {
     if (condition === "始终提问") return true;
-    
-    // 解析条件表达式，如 "gender == 'female'"
+
+    // ✅ 最优先处理 || 复合条件
+    if (condition.includes("||")) {
+      const parts = condition.split("||").map(s => s.trim());
+      return parts.some(part => this.checkQuestionCondition(part));
+    }
+
+    // ✅ 然后处理显式布尔条件
+    if (/==\s*(true|false)/.test(condition)) {
+      const [field, value] = condition.split("==").map(s => s.trim());
+      const cleanValue = value.replace(/['"]/g, '');
+      const patientValue = this.data.patientData[field];
+      console.log(`检查条件: ${field} == ${cleanValue}, 患者数据: ${patientValue}`);
+      return String(patientValue) === cleanValue;
+    }
+
+    // ✅ 特殊字段处理
     if (condition.includes("==")) {
       const [field, value] = condition.split("==").map(s => s.trim());
       const cleanValue = value.replace(/['"]/g, '');
       const patientValue = this.data.patientData[field];
-      
-      console.log(`检查条件: ${field} == ${cleanValue}, 患者数据: ${patientValue}`);
-      
-      // 特殊处理性别判断
       if (field === 'gender') {
-        // 如果患者性别还未确定，返回false（跳过女性专属问题）
         if (!patientValue) {
           console.log('性别未确定，跳过女性专属问题');
           return false;
         }
-        // 标准化性别值进行比较
         const normalizedPatientGender = patientValue.toLowerCase();
         const normalizedConditionGender = cleanValue.toLowerCase();
         const result = normalizedPatientGender === normalizedConditionGender;
         console.log(`性别匹配结果: ${result}`);
         return result;
       }
-      
+      console.log(`检查条件: ${field} == ${cleanValue}, 患者数据: ${patientValue}`);
       return patientValue === cleanValue;
     }
-    
-    // 解析布尔条件，如 "fever == true"
-    if (condition.includes("true")) {
-      const field = condition.split("==")[0].trim();
-      return this.data.patientData[field] === true;
-    }
-    
-    if (condition.includes("false")) {
-      const field = condition.split("==")[0].trim();
-      return this.data.patientData[field] === false;
-    }
-    
-    // 解析或条件，如 "fever == true || cold_feeling == true"
-    if (condition.includes("||")) {
-      const parts = condition.split("||").map(s => s.trim());
-      return parts.some(part => this.checkQuestionCondition(part));
-    }
-    
     return true;
-  },/**
-   * 播放TTS并自动开始录音 - 使用腾讯云TTS（语音模式专用）
-   * @param {string} text - 要播放的文本
-   */
-  async playTTSAndStartRecording(text) {
-    console.log('进入playTTSAndStartRecording方法（语音模式）');
-    console.log('要播放的文本:', text);
-    
-    try {
-      console.log('开始腾讯云TTS播放:', text);
-      this.setData({ isTTSPlaying: true });
-      
-      // 使用腾讯云TTS播放
-      await this.playTencentTTS(text);
-      
-      console.log('腾讯云TTS播放完成，开始自动录音');
-      this.setData({ isTTSPlaying: false });
-      
-      // TTS播放完成后，自动开始录音
-      setTimeout(() => {
-        this.startAutoVoiceRecording();
-      }, 100); // 0.1秒延迟后开始录音
-      
-    } catch (error) {
-      console.error('腾讯云TTS播放失败:', error);
-      this.setData({ isTTSPlaying: false });
-      // TTS失败也要开始录音
-      this.startAutoVoiceRecording();
-    }
   },
 
-  /**
-   * 仅播放TTS，不启动录音 - 适用于文字输入模式
-   * @param {string} text - 要播放的文本
-   */
-  async playTTSOnly(text) {
-    console.log('进入playTTSOnly方法（文字模式TTS播报）');
-    console.log('要播放的文本:', text);
-    
-    try {
-      console.log('开始腾讯云TTS播放（仅播报，不录音）:', text);
-      this.setData({ isTTSPlaying: true });
-      
-      // 使用腾讯云TTS播放
-      await this.playTencentTTS(text);
-      
-      console.log('腾讯云TTS播放完成（文字模式，不启动录音）');
-      this.setData({ isTTSPlaying: false });
-      
-    } catch (error) {
-      console.error('腾讯云TTS播放失败（文字模式）:', error);
-      this.setData({ isTTSPlaying: false });
-      // 文字模式下TTS失败不需要特殊处理，用户可以正常文字输入
-    }
-  },
 
-  /**
-   * 使用DashScope TTS播放语音
-   * @param {string} text - 要播放的文本
-   */
-  async playDashScopeTTS(text) {
-    if (!this.data.llmConfig.enableTTS) {
-      // 如果TTS被禁用，使用简单延迟模拟
-      return this.playBackupTTS(text);
-    }
-
-    try {
-      const ttsConfig = this.data.llmConfig.tts;
-      
-      // 调用DashScope TTS API
-      const response = await new Promise((resolve, reject) => {
-        wx.request({
-          url: ttsConfig.baseUrl,
-          method: 'POST',
-          header: {
-            'Authorization': `Bearer ${this.data.llmConfig.apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          data: {
-            model: ttsConfig.model,
-            input: {
-              text: text
-            },
-            parameters: {
-              voice: ttsConfig.voice,
-              format: ttsConfig.format,
-              sample_rate: ttsConfig.sampleRate,
-              volume: ttsConfig.volume,
-              speech_rate: ttsConfig.speechRate,
-              pitch_rate: ttsConfig.pitchRate
-            }
-          },
-          timeout: 10000,
-          success: resolve,
-          fail: reject
-        });
-      });
-
-      if (response.statusCode === 200 && response.data.output && response.data.output.audio_url) {
-        // 播放生成的音频
-        return this.playAudioFromUrl(response.data.output.audio_url);
-      } else {
-        throw new Error('TTS API返回错误: ' + JSON.stringify(response.data));
-      }
-      
-    } catch (error) {
-      console.error('DashScope TTS调用失败:', error);
-      // 降级到备用TTS
-      return this.playBackupTTS(text);
-    }
-  },
-
-  /**
-   * 播放音频URL
-   * @param {string} audioUrl - 音频URL
-   */
-  playAudioFromUrl(audioUrl) {
-    return new Promise((resolve, reject) => {
-      const audioContext = wx.createInnerAudioContext();
-      
-      audioContext.src = audioUrl;
-      this.ttsPlayer = audioContext; // 保存播放器实例，供外部 stop 使用
-      audioContext.onPlay(() => {
-        console.log('TTS音频开始播放');
-      });
-      
-      audioContext.onEnded(() => {
-        console.log('TTS音频播放完成');
-        audioContext.destroy();
-        this.ttsPlayer = null; // 清除引用
-        resolve();
-      });
-      
-      audioContext.onError((err) => {
-        console.error('TTS音频播放失败:', err);
-        audioContext.destroy();
-        this.ttsPlayer = null; // 清除引用
-        reject(err);
-      });
-      
-      audioContext.play();
-    });  
-  },
-
-  /**
-   * 使用腾讯云TTS播放语音
-   * @param {string} text - 要播放的文本
-   */
-  async playTencentTTS(text) {
-    try {
-      console.log('调用腾讯云TTS云函数:', text);
-        // 准备TTS配置
-      const ttsConfig = {
-        appid: this.data.llmConfig.tts?.appid || this.data.llmConfig.tencent?.appid || '1365883949',
-        secretid: this.data.llmConfig.tts?.secretid || this.data.llmConfig.tencent?.secretid,
-        secretkey: this.data.llmConfig.tts?.secretkey || this.data.llmConfig.tencent?.secretkey,
-        voicetype: this.data.llmConfig.tts?.voicetype || 1002, // 标准女声
-        samplerate: this.data.llmConfig.tts?.samplerate || 16000,
-        codec: this.data.llmConfig.tts?.codec || 'mp3',
-        volume: this.data.llmConfig.tts?.volume || 0,
-        speed: this.data.llmConfig.tts?.speed || 0,
-        emotion: this.data.llmConfig.tts?.emotion || 'neutral'
-      };
-      
-      // 调用腾讯云TTS云函数
-      const result = await new Promise((resolve, reject) => {
-        wx.cloud.callFunction({
-          name: 'tts',
-          data: {
-            text: text,
-            config: ttsConfig
-          },
-          success: res => {
-            console.log('腾讯云TTS云函数调用成功:', res);
-            if (res.result && res.result.success) {
-              resolve(res.result);
-            } else {
-              reject(new Error(res.result ? res.result.error : 'TTS云函数调用失败'));
-            }
-          },
-          fail: err => {
-            reject(new Error(`TTS云函数调用失败: ${err.errMsg}`));
-          }
-        });
-      });
-      
-      // 处理TTS返回的音频数据
-      if (result.data && result.data.Audio) {
-        // 保存音频文件并播放
-        const audioData = result.data.Audio;
-        const timestamp = Math.floor(Date.now() / 1000);
-        const fileName = `tts_${timestamp}.mp3`;
-        const filePath = `${wx.env.USER_DATA_PATH}/${fileName}`;
-        
-        // 保存音频文件
-        await new Promise((resolve, reject) => {
-          wx.getFileSystemManager().writeFile({
-            filePath: filePath,
-            data: wx.base64ToArrayBuffer(audioData),
-            success: resolve,
-            fail: reject
-          });
-        });
-        
-        // 播放音频文件
-        return this.playAudioFromUrl(filePath);
-      } else {
-        throw new Error('TTS响应中没有音频数据');
-      }
-      
-    } catch (error) {
-      console.error('腾讯云TTS调用失败:', error);
-      // 降级到备用TTS
-      return this.playBackupTTS(text);
-    }
-  },
-
-  /**
-   * 备用TTS方案（使用系统TTS）
-   * @param {string} text - 要播放的文本
-   */
-  playBackupTTS(text) {
-    return new Promise((resolve) => {
-      // 如果没有云函数，使用简单的延迟模拟TTS播放时间
-      const estimatedDuration = text.length * 150; // 每个字符150ms
-      setTimeout(() => {
-        resolve();
-      }, Math.min(estimatedDuration, 3000)); // 最多3秒
-    });
-  },
   /**
    * 自动开始语音录音
    */
   startAutoVoiceRecording() {
-    if (!this.data.autoVoiceMode || this.data.isRecording || this.data.isConsultFinished) {
+    if (!this.data.autoVoiceMode || this.data.isRecording || this.data.isConsultFinished || this.data.isPreparingRecording) {
       return;
     }
 
@@ -675,6 +601,7 @@ Page({
       }
     });
   },
+
   /**
    * 执行自动录音
    */
@@ -687,6 +614,7 @@ Page({
       this.startTraditionalRecording();
     }
   },
+
   /**
    * 开始实时语音识别
    */
@@ -715,8 +643,8 @@ Page({
           secretid: this.data.llmConfig.asr?.secretid || this.data.llmConfig.tencent?.secretid,
           secretkey: this.data.llmConfig.asr?.secretkey || this.data.llmConfig.tencent?.secretkey,
           engine_model_type: this.data.llmConfig.asr?.engine_model_type || '16k_zh',
-          voice_format: this.data.llmConfig.asr?.voice_format || 1, // 使用PCM格式
-          needvad: 1, // 开启VAD
+          voice_format: this.data.llmConfig.asr?.voice_format || 1,
+          needvad: 1,
           filter_dirty: this.data.llmConfig.asr?.filter_dirty || 0,
           filter_modal: this.data.llmConfig.asr?.filter_modal || 0,
           filter_punc: this.data.llmConfig.asr?.filter_punc || 0,
@@ -772,10 +700,8 @@ Page({
       wx.getSetting({
         success: (res) => {
           if (res.authSetting['scope.record'] === true) {
-            // 已授权，直接继续
             resolve();
           } else if (res.authSetting['scope.record'] === false) {
-            // 权限被拒绝，显示提示并降级
             wx.showModal({
               title: '麦克风权限',
               content: '实时语音识别需要麦克风权限，将使用普通录音模式',
@@ -784,7 +710,6 @@ Page({
             });
             reject(new Error('权限被拒绝'));
           } else {
-            // 首次申请权限
             wx.authorize({
               scope: 'scope.record',
               success: () => resolve(),
@@ -801,11 +726,11 @@ Page({
           }
         },
         fail: () => {
-          // 获取设置失败，尝试直接申请权限
           wx.authorize({
             scope: 'scope.record',
             success: () => resolve(),
-            fail: () => reject(new Error('权限申请失败'))          });
+            fail: () => reject(new Error('权限申请失败'))
+          });
         }
       });
     });
@@ -817,19 +742,14 @@ Page({
   handleRealtimeASRResult(result) {
     console.log('实时识别结果:', result);
     
-    // 更新实时显示的识别文本
     this.setData({
       realtimeRecognitionText: result.text
     });
 
-    // 如果是最终结果（稳态），处理完整的识别内容
     if (result.is_final && result.text.trim()) {
       console.log('收到最终识别结果:', result.text);
       
-      // 停止实时识别
       this.stopRealtimeASR();
-      
-      // 发送识别结果
       this.processRealtimeASRResult(result.text);
     }
   },
@@ -851,7 +771,6 @@ Page({
       duration: 2000
     });
 
-    // 2秒后重新开始录音
     setTimeout(() => {
       if (this.data.autoVoiceMode && !this.data.isConsultFinished) {
         this.startAutoVoiceRecording();
@@ -898,7 +817,6 @@ Page({
     console.log('处理实时识别结果:', text);
     
     try {
-      // 自动发送识别结果
       await this.sendAutoVoiceMessage(text);
     } catch (error) {
       console.error('发送实时识别结果失败:', error);
@@ -910,16 +828,13 @@ Page({
    * 传统录音方式
    */
   startTraditionalRecording() {
-    // 初始化录音管理器
     if (!this.recorderManager) {
       this.recorderManager = wx.getRecorderManager();
       this.initAutoRecorderEvents();
     }
 
-    // 设置录音状态
     this.setData({ isRecording: true });
 
-    // 显示录音提示
     wx.showToast({
       title: '开始录音...',
       icon: 'none',
@@ -928,16 +843,14 @@ Page({
 
     console.log('开始传统录音');
     
-    // 开始录音
     this.recorderManager.start({
-      duration: 30000, // 30秒最大时长
+      duration: 30000,
       sampleRate: 16000,
       numberOfChannels: 1,
       encodeBitRate: 96000,
       format: 'mp3'
     });
 
-    // 开始静音检测
     this.startSilenceDetection();
   },
 
@@ -945,26 +858,23 @@ Page({
    * 开始静音检测
    */
   startSilenceDetection() {
-    // 清除之前的定时器
     if (this.silenceTimer) {
       clearTimeout(this.silenceTimer);
     }
 
-    // 设置1.5秒静音检测
     this.silenceTimer = setTimeout(() => {
       console.log('检测到1.5秒静音，停止录音');
       this.stopAutoRecording();
     }, this.data.silenceThreshold);
   },
+
   /**
    * 停止自动录音
    */
   stopAutoRecording() {
     if (this.data.useRealtimeASR && this.data.isRealtimeRecording) {
-      // 停止实时语音识别
       this.stopRealtimeASR();
     } else if (this.data.isRecording) {
-      // 停止传统录音
       this.stopTraditionalRecording();
     }
   },
@@ -975,13 +885,11 @@ Page({
   stopTraditionalRecording() {
     console.log('停止传统录音');
     
-    // 清除静音检测定时器
     if (this.silenceTimer) {
       clearTimeout(this.silenceTimer);
       this.silenceTimer = null;
     }
 
-    // 停止录音
     this.recorderManager.stop();
     this.setData({ isRecording: false });
   },
@@ -992,17 +900,14 @@ Page({
   initAutoRecorderEvents() {
     const that = this;
 
-    // 录音开始事件
     this.recorderManager.onStart(() => {
       console.log('自动录音开始');
     });
 
-    // 录音结束事件
     this.recorderManager.onStop((res) => {
       console.log('自动录音结束', res);
       
       if (res.tempFilePath) {
-        // 显示语音识别状态
         wx.showToast({
           title: '语音识别中...',
           icon: 'loading',
@@ -1013,12 +918,10 @@ Page({
       }
     });
 
-    // 录音错误事件
     this.recorderManager.onError((err) => {
       console.error('自动录音错误:', err);
       this.setData({ isRecording: false });
       
-      // 清除静音检测定时器
       if (this.silenceTimer) {
         clearTimeout(this.silenceTimer);
         this.silenceTimer = null;
@@ -1029,24 +932,22 @@ Page({
         icon: 'none'
       });
     });
-  },  /**
+  },
+
+  /**
    * 处理自动语音识别 - 使用腾讯云ASR
    */
   async processAutoVoiceRecognition(audioPath) {
     try {
-      // 调用腾讯云ASR进行语音识别
       const result = await this.callASRCloudFunction(audioPath);
       
       wx.hideToast();
       
       if (result.success && result.text.trim()) {
         console.log('语音识别成功:', result.text);
-        
-        // 自动发送识别结果
         await this.sendAutoVoiceMessage(result.text);
       } else {
         console.log('语音识别结果为空或失败:', result.message);
-        // 识别失败，重新开始录音
         this.handleRecognitionFailure();
       }
       
@@ -1054,75 +955,6 @@ Page({
       console.error('语音识别错误:', error);
       wx.hideToast();
       this.handleRecognitionFailure();
-    }
-  },
-
-  /**
-   * 调用DashScope ASR API
-   * @param {string} audioPath - 音频文件路径
-   */
-  async callDashScopeASR(audioPath) {
-    if (!this.data.llmConfig.enableASR) {
-      // 如果ASR被禁用，使用备用方案
-      return this.callASRCloudFunction(audioPath);
-    }
-
-    try {
-      const asrConfig = this.data.llmConfig.asr;
-      
-      // 读取音频文件
-      const fileData = await new Promise((resolve, reject) => {
-        wx.getFileSystemManager().readFile({
-          filePath: audioPath,
-          success: (res) => resolve(res.data),
-          fail: reject
-        });
-      });
-
-      // 将音频数据转换为base64
-      const base64Audio = wx.arrayBufferToBase64(fileData);
-
-      // 调用DashScope ASR API
-      const response = await new Promise((resolve, reject) => {
-        wx.request({
-          url: asrConfig.baseUrl,
-          method: 'POST',
-          header: {
-            'Authorization': `Bearer ${this.data.llmConfig.apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          data: {
-            model: asrConfig.model,
-            input: {
-              audio: base64Audio,
-              format: asrConfig.format
-            },
-            parameters: {
-              sample_rate: asrConfig.sampleRate,
-              enable_punctuation_prediction: asrConfig.enablePunctuation,
-              enable_inverse_text_normalization: asrConfig.enableITN
-            }
-          },
-          timeout: 15000,
-          success: resolve,
-          fail: reject
-        });
-      });
-
-      if (response.statusCode === 200 && response.data.output) {
-        const transcription = response.data.output.text || '';
-        return {
-          success: true,
-          text: transcription.trim()
-        };
-      } else {
-        throw new Error('ASR API返回错误: ' + JSON.stringify(response.data));
-      }
-
-    } catch (error) {
-      console.error('DashScope ASR调用失败:', error);
-      // 降级到云函数ASR
-      return this.callASRCloudFunction(audioPath);
     }
   },
 
@@ -1138,7 +970,6 @@ Page({
       duration: 2000
     });
     
-    // 2秒后重新开始录音
     setTimeout(() => {
       if (this.data.autoVoiceMode && !this.data.isConsultFinished) {
         this.startAutoVoiceRecording();
@@ -1156,7 +987,6 @@ Page({
 
     console.log('自动发送语音消息:', text);
 
-    // 添加用户消息
     const timestamp = new Date().toISOString();
     const userMessage = {
       id: this.generateMessageId(),
@@ -1177,16 +1007,13 @@ Page({
     this.scrollToBottom();
 
     try {
-      // 检查回答相关性
       const isRelevant = await this.checkAnswerRelevance(text);
       
       if (!isRelevant) {
         console.log('回答不相关，重复当前问题');
-        // 回答不相关，重复当前问题
         await this.repeatCurrentQuestion();
       } else {
         console.log('回答相关，处理下一个问题');
-        // 回答相关，处理下一个问题
         await this.processNextQuestion();
       }
       
@@ -1197,7 +1024,6 @@ Page({
         isInputDisabled: false 
       });
       
-      // 发送失败，重新开始录音
       if (this.data.autoVoiceMode) {
         setTimeout(() => {
           this.startAutoVoiceRecording();
@@ -1205,6 +1031,7 @@ Page({
       }
     }
   },
+
   /**
    * 重复当前问题
    */
@@ -1215,20 +1042,18 @@ Page({
       `您的回答似乎与问题不太相关。${currentQuestion.question}`,
       true
     );
-      this.setData({ 
+    
+    this.setData({ 
       isWaitingResponse: false,
       isInputDisabled: false 
     });
 
-    // 播放TTS（所有模式都需要），语音模式额外启动录音
     const repeatText = `您的回答似乎与问题不太相关。${currentQuestion.question}`;
     setTimeout(() => {
       if (this.data.autoVoiceMode) {
-        // 语音模式：TTS播报 + 自动录音
-        this.playTTSAndStartRecording(repeatText);
+        this.playVideoAndStartRecording(repeatText);
       } else {
-        // 文字模式：仅TTS播报
-        this.playTTSOnly(repeatText);
+        this.playVideoOnly(repeatText);
       }
     }, 500);
   },
@@ -1239,6 +1064,7 @@ Page({
   generateMessageId() {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   },
+
   /**
    * 文字输入处理
    */
@@ -1254,7 +1080,7 @@ Page({
   },
 
   /**
-   * 发送消息（文字模式）`
+   * 发送消息（文字模式）
    */
   async sendMessage() {
     const text = this.data.inputText.trim();
@@ -1270,7 +1096,6 @@ Page({
       return;
     }
 
-    // 添加用户消息
     const timestamp = new Date().toISOString();
     const userMessage = {
       id: this.generateMessageId(),
@@ -1291,41 +1116,37 @@ Page({
     this.scrollToBottom();
 
     try {
-      // 检查回答相关性
       const isRelevant = await this.checkAnswerRelevance(text);
-        if (!isRelevant) {
-        // 如果回答不相关，给出提示
+      
+      if (!isRelevant) {
         const irrelevantMessage = "您的回答似乎与问题不太相关，能否请您重新回答一下？";
         await this.addSystemMessage(irrelevantMessage, true);
         
-        // 播放相关性提示的TTS
         setTimeout(() => {
           if (this.data.autoVoiceMode) {
-            // 语音模式：TTS播报 + 自动录音
-            this.playTTSAndStartRecording(irrelevantMessage);
+            this.playVideoAndStartRecording(irrelevantMessage);
           } else {
-            // 文字模式：仅TTS播报
-            this.playTTSOnly(irrelevantMessage);
+            this.playVideoOnly(irrelevantMessage);
           }
         }, 1500);
-          this.setData({ 
+        
+        this.setData({ 
           isWaitingResponse: false,
           isInputDisabled: false,
-          inputText: "" // 清空输入框但保持焦点
+          inputText: ""
         });
         
-        // 设置输入框焦点
         setTimeout(() => {
           this.setData({ inputFocus: true });
         }, 100);
         return;
       }
 
-      // 处理下一个问题
       await this.processNextQuestion();
       
     } catch (error) {
-      console.error('发送消息错误:', error);      wx.showToast({
+      console.error('发送消息错误:', error);
+      wx.showToast({
         title: '发送失败，请重试',
         icon: 'none'
       });
@@ -1335,33 +1156,28 @@ Page({
         inputText: ""
       });
       
-      // 设置输入框焦点
       setTimeout(() => {
         this.setData({ inputFocus: true });
       }, 100);
     }
   },
+
   /**
    * 检查回答相关性 - 使用LLM进行智能判断
-   * @param {string} answer - 用户回答
    */
   async checkAnswerRelevance(answer) {
     try {
       const currentQuestion = this.getCurrentQuestion();
       
-      // 使用LLM进行相关性判断
       const relevanceResult = await this.callLLMForRelevance(currentQuestion.question, answer);
       
       if (relevanceResult.isRelevant) {
-        // 记录原始回答
         const topicKey = this.data.currentQuestionKey;
         const updatedRawResponses = { ...this.data.rawResponses };
         updatedRawResponses[topicKey] = (updatedRawResponses[topicKey] || "") + " " + answer;
         
-        // 提取结构化数据
         const extractedData = await this.extractStructuredData(answer, currentQuestion.fields);
         
-        // 更新患者数据
         const updatedPatientData = { ...this.data.patientData };
         Object.assign(updatedPatientData, extractedData);
         
@@ -1376,10 +1192,10 @@ Page({
       return false;
     } catch (error) {
       console.error('相关性检查失败:', error);
-      // 检查失败时默认认为相关
       return true;
     }
   },
+
   /**
    * 调用LLM进行相关性判断
    */
@@ -1403,20 +1219,18 @@ Page({
       return { isRelevant: true, reason: "判断失败，默认相关" };
     }
   },
+
   /**
    * 提取结构化数据
    */
   async extractStructuredData(answer, fields) {
     try {
       const fieldsDescription = {
-        // 基础信息
         "gender": "性别(male/female)",
         "age": "年龄(数字)",
         "chronic_disease": "慢性病类型",
         "treatment": "治疗方式",
         "drug_allergy": "药物过敏情况",
-        
-        // 发热寒热
         "fever": "是否发热(true/false)",
         "fever_temperature": "发热温度",
         "fever_time": "发热时间段",
@@ -1424,21 +1238,15 @@ Page({
         "cold_relief": "怕冷缓解情况",
         "sweating": "是否出汗(true/false)",
         "sweat_type": "汗液类型",
-        
-        // 头痛头晕
         "headache": "是否头痛(true/false)",
         "headache_location": "头痛部位",
         "headache_type": "头痛类型",
         "dizziness": "是否头晕(true/false)",
         "dizziness_type": "头晕类型",
         "nausea": "是否恶心(true/false)",
-        
-        // 五官
         "eye_symptoms": "眼部症状",
         "ear_symptoms": "耳部症状",
         "nose_symptoms": "鼻部症状",
-        
-        // 咽喉与咳嗽
         "throat_symptoms": "咽部症状",
         "cough": "是否咳嗽(true/false)",
         "cough_type": "咳嗽类型",
@@ -1448,25 +1256,17 @@ Page({
         "phlegm_easy": "是否易咳出",
         "chest_tightness": "是否胸闷(true/false)",
         "palpitation": "是否心悸(true/false)",
-        
-        // 食欲饮水
         "appetite": "食欲情况",
         "mouth_symptoms": "口腔症状",
         "drinking_habits": "饮水习惯",
-        
-        // 大小便与腹痛
         "urine_flow": "小便情况",
         "urine_color": "尿色",
         "bowel_frequency": "大便频率",
         "bowel_shape": "大便性状",
         "abdominal_pain": "腹痛情况",
-        
-        // 睡眠情绪
         "sleep_quality": "睡眠质量",
         "mood": "情绪状态",
         "skin_symptoms": "皮肤症状",
-        
-        // 女性月经
         "menstrual_cycle": "月经周期",
         "menstrual_color": "月经颜色与量",
         "dysmenorrhea": "是否痛经(true/false)",
@@ -1478,21 +1278,19 @@ Page({
       if (relevantFields.length === 0) {
         return {};
       }
-        const prompt = this.data.llmConfig.extractionPrompt(
+      
+      const prompt = this.data.llmConfig.extractionPrompt(
         answer, 
         relevantFields.map(field => `- ${field}: ${fieldsDescription[field]}`).join('\n')
       );
 
       const response = await this.callLLMAPI(prompt);
       
-      // 尝试解析JSON
       try {
-        // 提取JSON部分
         const jsonMatch = response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const extracted = JSON.parse(jsonMatch[0]);
           
-          // 处理性别字段的标准化
           if (extracted.gender) {
             if (extracted.gender.includes('男') || extracted.gender.toLowerCase().includes('male')) {
               extracted.gender = 'male';
@@ -1505,7 +1303,6 @@ Page({
         }
         return {};
       } catch {
-        // 如果解析失败，返回空对象
         return {};
       }
       
@@ -1514,6 +1311,7 @@ Page({
       return {};
     }
   },
+
   /**
    * 调用LLM API
    */
@@ -1565,7 +1363,6 @@ Page({
         console.error(`LLM API调用失败 (尝试 ${retry + 1}/${config.retryTimes + 1}):`, error);
         
         if (retry === config.retryTimes) {
-          // 最后一次重试失败，尝试备用API
           if (config.fallback && config.fallback.apiKey !== "your-openai-api-key-here") {
             try {
               return await this.callFallbackLLMAPI(prompt);
@@ -1577,7 +1374,6 @@ Page({
           throw error;
         }
         
-        // 等待后重试
         await new Promise(resolve => setTimeout(resolve, 1000 * (retry + 1)));
       }
     }
@@ -1624,88 +1420,80 @@ Page({
       });
     });
   },
+
   /**
    * 处理下一个问题 - 决策树逻辑
    */
   async processNextQuestion() {
     const currentQuestionKey = this.data.currentQuestionKey;
     const currentQuestion = this.data.questionTree[currentQuestionKey];
-    const currentFollowUpIndex = this.data.currentFollowUpIndex;
-    
-    // 检查是否还有追问
+    const currentFollowUpIndex = this.data.currentFollowUpIndex; 
+
     if (currentQuestion.followUps && currentFollowUpIndex < currentQuestion.followUps.length - 1) {
       const nextFollowUpIndex = currentFollowUpIndex + 1;
       const nextFollowUp = currentQuestion.followUps[nextFollowUpIndex];
-      
-      // 检查追问条件
+      console.log(`当前问题: ${currentQuestionKey}, followUpIndex: ${nextFollowUpIndex}`);
+      console.log(`检测 followUp 条件: ${nextFollowUp.condition}, 结果: ${this.checkQuestionCondition(nextFollowUp.condition)}`);
       if (this.checkQuestionCondition(nextFollowUp.condition)) {
-        // 进行追问
         await this.addSystemMessage(nextFollowUp.question, true);
-          this.setData({
+        
+        this.setData({
           currentFollowUpIndex: nextFollowUpIndex,
           isWaitingResponse: false,
           isInputDisabled: false
         });
         
-        // 如果是文字模式，恢复输入框焦点
         if (!this.data.autoVoiceMode) {
           setTimeout(() => {
             this.setData({ inputFocus: true });
           }, 1000);
-        }// 不论语音模式还是文字模式，都播放TTS - 医生问题必须有语音播报
+        }
+        
         setTimeout(() => {
           if (this.data.autoVoiceMode) {
-            // 语音模式：TTS播报 + 自动录音
-            this.playTTSAndStartRecording(nextFollowUp.question);
+            this.playVideoAndStartRecording(nextFollowUp.question);
           } else {
-            // 文字模式：仅TTS播报，不自动录音
-            this.playTTSOnly(nextFollowUp.question);
+            this.playVideoOnly(nextFollowUp.question);
           }
         }, 500);
         
         return;
       } else {
-        // 条件不满足，跳过这个追问，检查下一个
         this.setData({ currentFollowUpIndex: nextFollowUpIndex });
         await this.processNextQuestion();
         return;
       }
     }
     
-    // 当前主题的所有问题已完成，进入下一个主题
     const nextQuestionKey = this.getNextQuestionKey();
     
     if (nextQuestionKey) {
       const nextMainQuestion = this.data.questionTree[nextQuestionKey];
       
-      // 检查主题条件
       if (this.checkQuestionCondition(nextMainQuestion.condition)) {
-        // 进入下一个主题
         await this.addSystemMessage(nextMainQuestion.question, true);
-          this.setData({
+        
+        this.setData({
           currentQuestionKey: nextQuestionKey,
           currentFollowUpIndex: -1,
           isWaitingResponse: false,
           isInputDisabled: false
         });
         
-        // 如果是文字模式，恢复输入框焦点
         if (!this.data.autoVoiceMode) {
           setTimeout(() => {
             this.setData({ inputFocus: true });
           }, 1000);
-        }// 不论语音模式还是文字模式，都播放TTS - 医生问题必须有语音播报
+        }
+        
         setTimeout(() => {
           if (this.data.autoVoiceMode) {
-            // 语音模式：TTS播报 + 自动录音
-            this.playTTSAndStartRecording(nextMainQuestion.question);
+            this.playVideoAndStartRecording(nextMainQuestion.question);
           } else {
-            // 文字模式：仅TTS播报，不自动录音
-            this.playTTSOnly(nextMainQuestion.question);
+            this.playVideoOnly(nextMainQuestion.question);
           }
         }, 500);
       } else {
-        // 条件不满足，跳过这个主题
         this.setData({
           currentQuestionKey: nextQuestionKey,
           currentFollowUpIndex: -1
@@ -1714,10 +1502,10 @@ Page({
       }
       
     } else {
-      // 所有问题完成，进行总结
       await this.finishConsultation();
     }
   },
+
   /**
    * 完成问诊并生成总结
    */
@@ -1725,14 +1513,11 @@ Page({
     const finishMessage = "感谢您的配合！所有问题已经回答完毕，正在为您生成健康建议和症状总结...";
     await this.addSystemMessage(finishMessage, true);
     
-    // 播放完成提示的TTS
     setTimeout(() => {
       if (this.data.autoVoiceMode) {
-        // 语音模式：仅TTS播报，不自动录音（问诊已结束）
-        this.playTTSOnly(finishMessage);
+        this.playVideoOnly(finishMessage);
       } else {
-        // 文字模式：仅TTS播报
-        this.playTTSOnly(finishMessage);
+        this.playVideoOnly(finishMessage);
       }
     }, 1500);
     
@@ -1740,22 +1525,18 @@ Page({
       isConsultFinished: true,
       isWaitingResponse: true,
       isInputDisabled: true,
-      autoVoiceMode: false  // 关闭自动语音模式
+      autoVoiceMode: false
     });
 
     try {
-      // 使用LLM生成症状总结和初步分析
       const summary = await this.generateMedicalSummary();
       
-      // 显示总结
       await this.addSystemMessage(summary, true);
       
-      // 播放总结的TTS
       setTimeout(() => {
-        this.playTTSOnly(summary);
+        this.playVideoOnly(summary);
       }, 1500);
       
-      // 保存问答记录并跳转
       this.saveRecordsAndNavigate();
       
     } catch (error) {
@@ -1763,9 +1544,8 @@ Page({
       const errorMessage = "系统正在整理您的信息，请稍后查看总结页面。";
       await this.addSystemMessage(errorMessage, true);
       
-      // 播放错误提示的TTS
       setTimeout(() => {
-        this.playTTSOnly(errorMessage);
+        this.playVideoOnly(errorMessage);
       }, 1500);
       
       this.saveRecordsAndNavigate();
@@ -2224,7 +2004,6 @@ Page({
       inputText: "",
       voiceRecognitionResult: "",
       isRecording: false,
-      isTTSPlaying: false
     });
     wx.setStorageSync("inputMode", newMode);
 
@@ -2236,17 +2015,18 @@ Page({
       });
       
       // 如果切换到语音模式且当前有问题在等待回答，自动开始录音（0.5s后）
-      if (!this.data.isConsultFinished && !this.data.isWaitingResponse) {
+      if (!this.data.isConsultFinished && !this.data.isWaitingResponse && !this.data.isTTSPlaying && !this.data.isPreparingRecording) {
+        // 在需要录音时设置 preparing 状态
+        this.setData({ isPreparingRecording: true });
         setTimeout(() => {
           this.startAutoVoiceRecording();
+          this.setData({ isPreparingRecording: false });
         }, 500);
       }
     } else {
       wx.showToast({
-        title: '文字模式已激活',
-        icon: 'success',
-        duration: 1500
-      });
+        title: '文字模式已激活', icon: 'success', duration: 1500 });
+        this.setData({ isPreparingRecording: false });  // 释放准备状态
     }
   },
 
@@ -2260,17 +2040,16 @@ Page({
       success: (res) => {
         if (res.confirm) {
           // 停止播放（如果正在播放）
-          if (this.data.isTTSPlaying && this.ttsPlayer && this.ttsPlayer.stop) {
-            this.ttsPlayer.stop(); // 停止腾讯云TTS播放
-            this.ttsPlayer.destroy();
-            this.ttsPlayer = null;
-            this.setData({ isTTSPlaying: false });
-          }   
+          if (this.data.isTTSPlaying) {
+            this.setData({ isTTSPlaying: false, currentVideo: '', showImage: false });
+          }
           
           // 停止录音（如果正在录音）
           if (this.data.isRecording && this.recorderManager) {
             this.recorderManager.stop();
           }
+          
+          // 统一重置并播放欢迎视频将放在initializeChat方法中处理，此处移除多余设置
           
           // 清除所有定时器
           if (this.recordingTimer) {
@@ -2281,7 +2060,7 @@ Page({
             clearTimeout(this.silenceTimer);
             this.silenceTimer = null;
           }
-          
+
           // 重置所有数据
           const initialPatientData = {
             // 基础信息
@@ -2370,7 +2149,7 @@ Page({
             isInputDisabled: false,
             isRecording: false,
             voiceRecognitionResult: "",
-            isTTSPlaying: false,
+            // 不在此处设置isTTSPlaying，交由initializeChat方法处理视频播放逻辑
             autoVoiceMode: this.data.inputMode === '语音输入',
             patientData: initialPatientData,
             rawResponses: initialRawResponses

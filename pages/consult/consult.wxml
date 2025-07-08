@@ -1,6 +1,30 @@
 <view class="chat-container">
   <!-- 头部信息 -->
   <view class="chat-header">
+
+  <view class="video-container">
+    <video 
+      src="{{currentVideo}}" 
+      autoplay 
+      controls="{{false}}" 
+      loop="{{false}}"
+      muted="{{false}}"
+      class="tts-video"
+      hidden="{{!isTTSPlaying}}"
+      bindended="onVideoEnd"
+      binderror="onVideoError"
+      id="consultVideo"
+    ></video>
+
+    <image 
+      src="{{imageUrl}}" 
+      mode="aspectFill" 
+      class="tts-video"
+      hidden="{{isTTSPlaying || !showImage}}"
+    ></image>
+  </view>
+
+
     <view class="header-info">
       <text class="doctor-name">医疗助手</text>
       <text class="status-text">{{isConsultFinished ? '问诊完成' : '正在问诊'}}</text>

@@ -38,13 +38,13 @@ Page({
     // 查找最后一条系统消息，通常是LLM生成的总结
     for (let i = chatHistory.length - 1; i >= 0; i--) {
       const message = chatHistory[i];
-      if (message.type === 'system' && message.content.length > 100) {
+      if (message.role === 'system' && message.text && message.text.length > 100) {
         // 如果内容较长，可能是总结
         this.setData({
-          summary: message.content,
+          summary: message.text,
           isLoading: false
         });
-        this.parseMarkdownToRichText(message.content);
+        this.parseMarkdownToRichText(message.text);
         return;
       }
     }

@@ -43,6 +43,34 @@
   align-items: center;
 }
 
+.video-container {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  width: 160px;
+  height: 160px;
+  background-color: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  /* 让视频和图片都绝对定位重叠显示 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tts-video {
+  position: absolute; /* 关键：使视频和图片重叠 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .progress-text {
   font-size: 14px;
   font-weight: bold;
