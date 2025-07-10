@@ -136,13 +136,6 @@
         />
         <text class="char-count">{{inputText.length}}/500</text>
       </view>
-      <button 
-        class="send-btn {{inputText.trim() ? 'active' : ''}}" 
-        bindtap="sendMessage"
-        disabled="{{!inputText.trim() || isWaitingResponse || isConsultFinished}}"
-      >
-        <text class="send-icon">📤</text>
-      </button>
     </view>
 
     <!-- 语音输入模式 -->
