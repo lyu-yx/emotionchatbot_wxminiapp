@@ -1422,6 +1422,77 @@ Page({
   },
 
   /**
+   * 调用阿里云智能体应用
+   */
+  async callAliyunAgent(patientInfo) {
+    const config = this.data.llmConfig.aliyunAgent;
+    
+    try {
+      const prompt = this.data.llmConfig.aliyunAgentPrompt(patientInfo);
+      
+      const requestData = {
+        input: {
+          prompt: prompt
+        },
+        parameters: {},
+        debug: {},
+        // 如果配置了RAG选项，添加到请求中
+        ...(Object.keys(config.ragOptions).length > 0 && { 
+          rag_options: config.ragOptions 
+        })
+      };
+      
+      console.log('调用阿里云智能体应用，请求数据:', requestData);
+      
+      const response = await this.callAliyunAgentAPI(requestData);
+      return response;
+      
+    } catch (error) {
+      console.error('阿里云智能体应用调用失败:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 调用阿里云智能体应用API
+   */
+  async callAliyunAgentAPI(requestData) {
+    const config = this.data.llmConfig.aliyunAgent;
+    
+    return new Promise((resolve, reject) => {
+      wx.request({
+        url: `${config.baseUrl}/${config.appId}/completion`,
+        method: 'POST',
+        header: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`
+        },
+        data: requestData,
+        timeout: this.data.llmConfig.requestTimeout,
+        success: (res) => {
+          console.log('阿里云智能体应用响应:', res);
+          
+          if (res.statusCode === 200) {
+            if (res.data.output && res.data.output.text) {
+              resolve(res.data.output.text);
+            } else if (res.data.output && res.data.output.choices && res.data.output.choices[0]) {
+              resolve(res.data.output.choices[0].message.content);
+            } else {
+              reject(new Error('阿里云智能体应用响应格式错误'));
+            }
+          } else {
+            reject(new Error(`阿里云智能体应用调用失败: ${res.statusCode} ${JSON.stringify(res.data)}`));
+          }
+        },
+        fail: (err) => {
+          console.error('阿里云智能体应用网络请求失败:', err);
+          reject(new Error('网络请求失败'));
+        }
+      });
+    });
+  },
+
+  /**
    * 处理下一个问题 - 决策树逻辑
    */
   async processNextQuestion() {
@@ -1559,13 +1630,21 @@ Page({
     try {
       // 构建完整的症状描述
       const patientInfo = this.buildPatientInfoSummary();
+      
+      // 检查是否启用阿里云智能体应用
+      if (this.data.llmConfig.enableAliyunAgent) {
+        console.log('使用阿里云智能体应用生成总结');
+        const summary = await this.callAliyunAgent(patientInfo);
+        return summary;
+      } else {
+        console.log('使用传统LLM生成总结');
         const prompt = this.data.llmConfig.summaryPrompt(patientInfo);
-
-      const summary = await this.callLLMAPI(prompt);
-      return summary;
+        const summary = await this.callLLMAPI(prompt);
+        return summary;
+      }
       
     } catch (error) {
-      console.error('LLM总结生成失败:', error);
+      console.error('总结生成失败:', error);
       return this.generateFallbackSummary();
     }
   },
@@ -2211,5 +2290,57 @@ Page({
         }
       }
     });
+  },
+
+  /**
+   * 测试阿里云智能体应用（调试用）
+   */
+  async testAliyunAgent() {
+    if (!this.data.llmConfig.enableAliyunAgent) {
+      wx.showModal({
+        title: '测试结果',
+        content: '阿里云智能体应用未启用，请在配置中开启',
+        showCancel: false
+      });
+      return;
+    }
+
+    wx.showLoading({
+      title: '测试中...',
+      mask: true
+    });
+
+    try {
+      const testInfo = `患者信息：女性，35岁
+问诊信息：
+T1-基础信息：我是女性，35岁，有轻微高血压在服药治疗，无药物过敏。
+T2-发热寒热：最近有轻微发热，晚上比较明显，体温37.5度左右。
+T3-头痛头晕：偶尔头痛，主要在太阳穴部位，胀痛。
+T5-咽喉与咳嗽：喉咙有些干痒，有轻微咳嗽，少量白痰。
+T8-睡眠情绪：睡眠质量一般，容易早醒，情绪有些焦虑。`;
+
+      const result = await this.callAliyunAgent(testInfo);
+      
+      wx.hideLoading();
+      
+      wx.showModal({
+        title: '测试成功',
+        content: `阿里云智能体应用调用成功！\n\n响应长度：${result.length}字符\n\n前100字符：${result.substring(0, 100)}...`,
+        showCancel: false
+      });
+      
+      console.log('阿里云智能体应用测试结果:', result);
+      
+    } catch (error) {
+      wx.hideLoading();
+      
+      wx.showModal({
+        title: '测试失败',
+        content: `错误信息：${error.message}\n\n请检查配置和网络连接`,
+        showCancel: false
+      });
+      
+      console.error('阿里云智能体应用测试失败:', error);
+    }
   }
 });
