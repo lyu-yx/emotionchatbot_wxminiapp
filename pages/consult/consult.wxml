@@ -100,16 +100,16 @@
     <!-- 输入模式切换 -->
     <view class="input-mode-switch">
       <button 
-        wx:if="{{inputMode === '文字输入'}}"
-        class="mode-btn {{inputMode === '文字输入' ? 'active' : ''}}"        
+        class="mode-btn {{inputMode === '文字输入' ? 'active' : ''}}" 
+        bindtap="switchInputMode"
         data-mode="文字输入"
       >
         <text class="mode-icon">✏️</text>
         <text class="mode-text">文字</text>
       </button>
       <button 
-        wx:if="{{inputMode === '语音输入'}}"
         class="mode-btn {{inputMode === '语音输入' ? 'active' : ''}}" 
+        bindtap="switchInputMode"
         data-mode="语音输入"
       >
         <text class="mode-icon">🎤</text>
