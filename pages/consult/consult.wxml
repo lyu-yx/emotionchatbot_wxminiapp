@@ -131,7 +131,7 @@
           disabled="{{isInputDisabled || isConsultFinished}}"
           maxlength="500"
           auto-height
-          show-confirm-bar="{{!isInputDisabled && !isConsultFinished && inputText.trim()}}"
+          show-confirm-bar="true"
           confirm-type="send"
         />
         <text class="char-count">{{inputText.length}}/500</text>

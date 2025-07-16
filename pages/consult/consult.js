@@ -268,7 +268,7 @@ Page({
       "最近有没有发烧或怕冷？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热主问题.mp4",
       "发烧大概多少度？哪个时间段最明显？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问1.mp4",
       "穿衣服后能缓解怕冷吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问2.mp4",
-      "有没有出汗？是清水汗还是黏汗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问3.mp4",// 这段视频出问题
+      "有没有出汗？是清水汗还是黏汗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问3.mp4",
       "最近有没有头痛或头晕？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕主问题.mp4",
       "头痛在什么部位？是胀痛、刺痛还是抽痛？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问1.mp4",
       "是头部昏沉还是天旋地转？有没有伴随恶心呕吐？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问2.mp4",
@@ -290,7 +290,7 @@ Page({
       "白带情况如何？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经追问1.mp4",
       "您好！我是您的智能问诊助手，接下来我会通过提问来了解您的健康状况，这样能帮助医生更好地了解您的情况。准备好了吗？我们开始第一个问题。": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome.mp4",
       "感谢您的配合！所有问题已经回答完毕，正在为您生成健康建议和症状总结...": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/finish.mp4",
-      "您的回答似乎与问题不太相关。": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/irrelevant_answer.mp4"
+      "您的回答似乎与问题不太相关，能否请您重新回答一下？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/irrelevant_answer.mp4"
     }
   },
   
@@ -360,7 +360,7 @@ Page({
       'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热主问题.mp4': 3000,
       'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问1.mp4': 5000,
       'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问2.mp4': 4000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问3.mp4': 5000, //这段视频出问题
+      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问3.mp4': 5000, 
       'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕主问题.mp4': 3000,
       'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问1.mp4': 7000,
       'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问2.mp4': 6000,
@@ -454,7 +454,7 @@ Page({
     console.log('要播放的文本:', text);
     
     try {
-      this.setData({ isTTSPlaying: true });
+      this.setData({ currentVideo: '' , isTTSPlaying: true });
       await this.playVideoOnly(text); // 等待视频播放完成
       console.log('视频播放完成，开始自动录音');
       this.startAutoVoiceRecording(); // 播放结束 -> 录音
@@ -469,7 +469,7 @@ Page({
    * 仅播放视频 - 适用于文字输入模式
    * @param {string} text - 要播放的文本
    */
-  async playVideoOnly(text) {
+  async playVideoOnly(text, forceReplay = false) {
     console.log('进入playVideoOnly方法（视频播报）');
     console.log('要播放的文本:', text);
     return new Promise((resolve) => {
@@ -477,22 +477,38 @@ Page({
         text.includes(key)
       );
     
-      if (matchedVideo) {
-        const videoUrl = matchedVideo[1];
-        this.videoEndedCallback = resolve; // 让 onVideoEnded 调用它
-        this.setData({
-          currentVideo: videoUrl,
-          isTTSPlaying: true,
-          showImage: false
-        });
-      }else {
-        // 没有匹配的视频，使用默认延时 1500ms
-        setTimeout(() => {
-          resolve();
-        }, 1500);
-      }
-    });
+      if (!matchedVideo) {
+      console.log('没有匹配到视频，延时 1500ms');
+      setTimeout(resolve, 1500);
+      return;
+    }
+
+    const videoUrl = matchedVideo[1];
+    const isSameVideo = videoUrl === this.data.currentVideo;
+
+    const doPlay = () => {
+      this.videoEndedCallback = resolve;
+      this.setData({
+        currentVideo: videoUrl,
+        isTTSPlaying: true,
+        showImage: false
+      }, () => {
+        // 注意：这个 play() 必须在 setData 回调中执行！
+        const videoContext = wx.createVideoContext('consultVideo', this);
+        videoContext.play(); // 主动播放
+      });
+    };
+
+    if (forceReplay && isSameVideo) {
+      console.log('强制重播相同视频：先清空 currentVideo');
+      this.setData({ currentVideo: '', isTTSPlaying: false });
+      setTimeout(doPlay, 100);
+    } else {
+      doPlay();
+    }
+  });
   },
+
 
   /**
    * 获取当前问题
@@ -554,10 +570,20 @@ Page({
           console.log('性别未确定，跳过女性专属问题');
           return false;
         }
-        const normalizedPatientGender = patientValue.toLowerCase();
-        const normalizedConditionGender = cleanValue.toLowerCase();
+        const normalizeGender = (val) => {
+          if (!val) return "";
+          if (["male", "男", "m", "1"].includes(val.toLowerCase())) return "male";
+          if (["female", "女", "f", "0"].includes(val.toLowerCase())) return "female";
+          return val.toLowerCase();
+        };
+        const normalizedPatientGender = normalizeGender(patientValue);
+        const normalizedConditionGender = normalizeGender(cleanValue);
         const result = normalizedPatientGender === normalizedConditionGender;
         console.log(`性别匹配结果: ${result}`);
+        console.log("🌈 原始性别值:", patientValue);
+        console.log("🌈 条件值:", cleanValue);
+        console.log("🌈 归一化后:", normalizedPatientGender, "==", normalizedConditionGender);
+        console.log("🌈 匹配结果:", result);
         return result;
       }
       console.log(`检查条件: ${field} == ${cleanValue}, 患者数据: ${patientValue}`);
@@ -1011,6 +1037,7 @@ Page({
       
       if (!isRelevant) {
         console.log('回答不相关，重复当前问题');
+        await this.playVideoOnly("您的回答似乎与问题不太相关，能否请您重新回答一下？");
         await this.repeatCurrentQuestion();
       } else {
         console.log('回答相关，处理下一个问题');
@@ -1037,9 +1064,9 @@ Page({
    */
   async repeatCurrentQuestion() {
     const currentQuestion = this.getCurrentQuestion();
-    
+    const repeatText = `您的回答似乎与问题不太相关，能否请您重新回答一下？${currentQuestion.question}`;
     await this.addSystemMessage(
-      `您的回答似乎与问题不太相关。${currentQuestion.question}`,
+      `您的回答似乎与问题不太相关，能否请您重新回答一下？${currentQuestion.question}`,
       true
     );
     
@@ -1048,12 +1075,16 @@ Page({
       isInputDisabled: false 
     });
 
-    const repeatText = `您的回答似乎与问题不太相关。${currentQuestion.question}`;
+    this.setData({
+      currentVideo: '',
+      isTTSPlaying: false
+    });
+    
     setTimeout(() => {
       if (this.data.autoVoiceMode) {
-        this.playVideoAndStartRecording(repeatText);
+        this.playVideoAndStartRecording(repeatText, true);
       } else {
-        this.playVideoOnly(repeatText);
+        this.playVideoOnly(repeatText, true);
       }
     }, 500);
   },
@@ -1166,35 +1197,38 @@ Page({
    * 检查回答相关性 - 使用LLM进行智能判断
    */
   async checkAnswerRelevance(answer) {
-    try {
-      const currentQuestion = this.getCurrentQuestion();
-      
-      const relevanceResult = await this.callLLMForRelevance(currentQuestion.question, answer);
-      
-      if (relevanceResult.isRelevant) {
-        const topicKey = this.data.currentQuestionKey;
-        const updatedRawResponses = { ...this.data.rawResponses };
-        updatedRawResponses[topicKey] = (updatedRawResponses[topicKey] || "") + " " + answer;
-        
-        const extractedData = await this.extractStructuredData(answer, currentQuestion.fields);
-        
-        const updatedPatientData = { ...this.data.patientData };
-        Object.assign(updatedPatientData, extractedData);
-        
-        this.setData({
-          rawResponses: updatedRawResponses,
-          patientData: updatedPatientData
-        });
-        
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('相关性检查失败:', error);
+  try {
+    const currentQuestion = this.getCurrentQuestion();
+    const relevanceResult = await this.callLLMForRelevance(currentQuestion.question, answer);
+
+    if (relevanceResult.isRelevant) {
+      const extractedData = await this.extractStructuredData(answer, currentQuestion.fields);
+      console.log("📌 提取结构化字段：", extractedData);
+
+      // ✅ 直接合并进 this.data.patientData
+      Object.assign(this.data.patientData, extractedData);
+
+      // ✅ 更新 rawResponses 和 patientData
+      this.setData({
+        rawResponses: {
+          ...this.data.rawResponses,
+          [this.data.currentQuestionKey]: (this.data.rawResponses[this.data.currentQuestionKey] || "") + " " + answer
+        },
+        patientData: this.data.patientData
+      });
+
+      console.log("🧬 当前 patientData:", this.data.patientData);
+
       return true;
     }
-  },
+
+    return false;
+  } catch (error) {
+    console.error('相关性检查失败:', error);
+    return true; // 默认继续问
+  }
+}
+,
 
   /**
    * 调用LLM进行相关性判断
@@ -1278,38 +1312,59 @@ Page({
       if (relevantFields.length === 0) {
         return {};
       }
-      
+      console.log("🧪 进入 extractStructuredData()");
       const prompt = this.data.llmConfig.extractionPrompt(
         answer, 
         relevantFields.map(field => `- ${field}: ${fieldsDescription[field]}`).join('\n')
       );
+      console.log("📤 构造的提取 Prompt:", prompt);
 
       const response = await this.callLLMAPI(prompt);
-      
-      try {
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const extracted = JSON.parse(jsonMatch[0]);
-          
-          if (extracted.gender) {
-            if (extracted.gender.includes('男') || extracted.gender.toLowerCase().includes('male')) {
-              extracted.gender = 'male';
-            } else if (extracted.gender.includes('女') || extracted.gender.toLowerCase().includes('female')) {
-              extracted.gender = 'female';
-            }
-          }
-          
-          return extracted;
-        }
-        return {};
-      } catch {
+      console.log("📥 LLM原始输出:", response); 
+          let extracted = {};
+
+    try {
+      // ✅ 先尝试直接解析整段为 JSON
+      extracted = JSON.parse(response);
+    } catch (e) {
+      // ❗失败时使用 fallback 提取 JSON 片段
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        extracted = JSON.parse(jsonMatch[0]);
+      } else {
+        console.warn("⚠️ 无法提取结构化 JSON：", response);
         return {};
       }
-      
-    } catch (error) {
-      console.error('数据提取失败:', error);
-      return {};
     }
+
+    // ✅ 统一 gender 值格式
+    if (extracted.gender) {
+      const genderRaw = extracted.gender.trim().toLowerCase();
+      if (genderRaw.includes('男') || genderRaw === 'male') {
+        extracted.gender = 'male';
+      } else if (genderRaw.includes('女') || genderRaw === 'female') {
+        extracted.gender = 'female';
+      }
+    }
+
+    // ✅ 如果 gender 还是没被识别，做兜底
+    if (!extracted.gender) {
+      const raw = answer.toLowerCase();
+      if (raw.includes('女')) {
+        extracted.gender = 'female';
+      } else if (raw.includes('男')) {
+        extracted.gender = 'male';
+      }
+      console.warn('⚠️ LLM未提取性别，使用正则兜底，结果：', extracted.gender);
+    }
+
+    console.log("📌 提取结构化字段：", extracted);
+    return extracted;
+
+  } catch (error) {
+    console.error('❌ 数据提取失败:', error);
+    return {};
+  }
   },
 
   /**
@@ -1336,7 +1391,7 @@ Page({
             temperature: config.temperature,
             max_tokens: config.maxTokens
           };
-          
+          console.log("📤 正在请求 LLM，Prompt:", prompt);
           wx.request({
             url: `${config.baseUrl}/chat/completions`,
             method: 'POST',
@@ -1356,7 +1411,7 @@ Page({
             fail: reject
           });
         });
-        
+        console.log("📥 LLM 返回内容：", response);
         return response;
         
       } catch (error) {
@@ -1368,10 +1423,10 @@ Page({
               return await this.callFallbackLLMAPI(prompt);
             } catch (fallbackError) {
               console.error('备用LLM API也失败:', fallbackError);
-              throw new Error('所有LLM API都不可用');
+              return "";
             }
           }
-          throw error;
+          return "";
         }
         
         await new Promise(resolve => setTimeout(resolve, 1000 * (retry + 1)));
@@ -2128,7 +2183,8 @@ Page({
             this.recorderManager.stop();
           }
           
-          // 统一重置并播放欢迎视频将放在initializeChat方法中处理，此处移除多余设置
+          // 确保视频 URL 被清空，以便重新初始化视频播放
+          this.setData({ currentVideo: '' });
           
           // 清除所有定时器
           if (this.recordingTimer) {
