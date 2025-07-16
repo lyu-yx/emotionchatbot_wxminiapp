@@ -1037,7 +1037,7 @@ Page({
       
       if (!isRelevant) {
         console.log('回答不相关，重复当前问题');
-        await this.playVideoOnly("您的回答似乎与问题不太相关，能否请您重新回答一下？");
+        
         await this.repeatCurrentQuestion();
       } else {
         console.log('回答相关，处理下一个问题');
@@ -1064,18 +1064,15 @@ Page({
    */
   async repeatCurrentQuestion() {
     const currentQuestion = this.getCurrentQuestion();
-    const repeatText = `您的回答似乎与问题不太相关，能否请您重新回答一下？${currentQuestion.question}`;
+    const repeatText = `您的回答似乎与问题不太相关，能否请您重新回答一下？`;
     await this.addSystemMessage(
-      `您的回答似乎与问题不太相关，能否请您重新回答一下？${currentQuestion.question}`,
+      `您的回答似乎与问题不太相关，能否请您重新回答一下？`,
       true
     );
     
     this.setData({ 
       isWaitingResponse: false,
-      isInputDisabled: false 
-    });
-
-    this.setData({
+      isInputDisabled: false ,
       currentVideo: '',
       isTTSPlaying: false
     });
