@@ -263,34 +263,34 @@ Page({
     llmConfig: LLM_CONFIG,
     
     videoMap: {
-      "首先，请告诉我您的性别和年龄？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome.mp4",
-      "您有没有慢性病，比如高血压、高血糖、高血脂、胃病等？是否在治疗？是否有药物过敏？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T1基础信息追问1.mp4",
-      "最近有没有发烧或怕冷？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热主问题.mp4",
-      "发烧大概多少度？哪个时间段最明显？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问1.mp4",
-      "穿衣服后能缓解怕冷吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问2.mp4",
-      "有没有出汗？是清水汗还是黏汗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问3.mp4",
-      "最近有没有头痛或头晕？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕主问题.mp4",
-      "头痛在什么部位？是胀痛、刺痛还是抽痛？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问1.mp4",
-      "是头部昏沉还是天旋地转？有没有伴随恶心呕吐？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问2.mp4",
-      "眼睛有没有不适，比如干涩、发痒、流泪或视力问题？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官主问题.mp4",
-      "请问是否有耳鸣或听力问题？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问1.mp4",
-      "鼻子是否有鼻塞、流涕？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问2.mp4",
-      "喉咙是否干、痒、疼或堵？最近有没有咳嗽？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽主问题.mp4",
-      "咳嗽是间断还是持续？有痰吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问1.mp4",
-      "痰的颜色和质地如何？容易咳出吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问2.mp4",
-      "是否伴随胸闷或心悸？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问3.mp4",
-      "最近食欲如何？有没有偏好吃冷食或热食？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水主问题.mp4",
-      "有没有口苦、口干、反酸等口腔症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问1.mp4",
-      "平时喝水习惯是怎样的？喜欢热水还是冷水？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问2.mp4",
-      "小便通畅吗？颜色如何？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛主问题.mp4",
-      "大便频率和性状如何？有没有腹痛？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛追问1.mp4",
-      "最近睡眠质量如何？情绪状态怎么样？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪主问题.mp4",
-      "有没有皮肤问题，比如瘙痒、红疹等？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪追问1.mp4",
-      "月经周期正常吗？颜色和量如何？是否痛经？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经主问题.mp4",
-      "白带情况如何？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经追问1.mp4",
-      "您好！我是您的智能问诊助手，接下来我会通过提问来了解您的健康状况，这样能帮助医生更好地了解您的情况。准备好了吗？我们开始第一个问题。": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome.mp4",
-      "感谢您的配合！所有问题已经回答完毕，正在为您生成健康建议和症状总结...": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/finish.mp4",
-      "您的回答似乎与问题不太相关，能否请您重新回答一下？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/irrelevant_answer.mp4"
+      "首先，请告诉我您的性别和年龄？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome1.mp4",
+      "您有没有慢性病，比如高血压、高血糖、高血脂、胃病等？是否在治疗？是否有药物过敏？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T1基础信息追问11.mp4",
+      "最近有没有发烧或怕冷？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热主问题1.mp4",
+      "发烧大概多少度？哪个时间段最明显？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问11.mp4",
+      "穿衣服后能缓解怕冷吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问21.mp4",
+      "有没有出汗？是清水汗还是黏汗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问31.mp4",
+      "最近有没有头痛或头晕？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕主问题1.mp4",
+      "头痛在什么部位？是胀痛、刺痛还是抽痛？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问11.mp4",
+      "是头部昏沉还是天旋地转？有没有伴随恶心呕吐？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问21.mp4",
+      "眼睛有没有不适，比如干涩、发痒、流泪或视力问题？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官主问题1.mp4",
+      "请问是否有耳鸣或听力问题？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问11.mp4",
+      "鼻子是否有鼻塞、流涕？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问21.mp4",
+      "喉咙是否干、痒、疼或堵？最近有没有咳嗽？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽主问题1.mp4",
+      "咳嗽是间断还是持续？有痰吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问11.mp4",
+      "痰的颜色和质地如何？容易咳出吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问21.mp4",
+      "是否伴随胸闷或心悸？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问31.mp4",
+      "最近食欲如何？有没有偏好吃冷食或热食？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水主问题1.mp4",
+      "有没有口苦、口干、反酸等口腔症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问11.mp4",
+      "平时喝水习惯是怎样的？喜欢热水还是冷水？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问21.mp4",
+      "小便通畅吗？颜色如何？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛主问题1.mp4",
+      "大便频率和性状如何？有没有腹痛？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛追问11.mp4",//大便情况如何，次数和形状是否正常
+      "最近睡眠质量如何？情绪状态怎么样？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪主问题1.mp4",//最近睡眠是否良好，容易入睡吗
+      "有没有皮肤问题，比如瘙痒、红疹等？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪追问11.mp4",//皮肤有没有异常，比如瘙痒、红疹、湿疹等？
+      "月经周期正常吗？颜色和量如何？是否痛经？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经主问题1.mp4",//请问您的月经是否规律？颜色量是否正常
+      "白带情况如何？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经追问11.mp4",//有没有痛经白带，情况如何
+      "您好！我是您的智能问诊助手，接下来我会通过提问来了解您的健康状况，这样能帮助医生更好地了解您的情况。准备好了吗？我们开始第一个问题。": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome1.mp4",
+      "感谢您的配合！所有问题已经回答完毕，正在为您生成健康建议和症状总结...": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/finish1.mp4",//非常感谢您的配合，问诊已经完成，我已经为您整理了一份问诊摘要，稍后会交给医生进行专业诊断，祝您早日康复
+      "您的回答似乎与问题不太相关，能否请您重新回答一下？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/irrelevant_answer1.mp4"
     }
   },
   

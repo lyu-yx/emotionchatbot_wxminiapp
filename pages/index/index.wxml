@@ -14,24 +14,10 @@
         <text class="icon-emoji">🏥</text>
       </view>
       <text class="app-title">智能医疗助手</text>
-      <text class="app-subtitle">您的贴心健康顾问</text>
+      
     </view>
 
-    <!-- 功能介绍 -->
-    <view class="feature-section">
-      <view class="feature-item">
-        <view class="feature-icon">💬</view>
-        <text class="feature-text">智能问诊对话</text>
-      </view>
-      <view class="feature-item">
-        <view class="feature-icon">🎤</view>
-        <text class="feature-text">语音输入识别</text>
-      </view>
-      <view class="feature-item">
-        <view class="feature-icon">📋</view>
-        <text class="feature-text">健康建议生成</text>
-      </view>
-    </view>
+
 
     <!-- 输入方式选择 -->
     <view class="input-mode-section">
