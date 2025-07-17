@@ -53,17 +53,7 @@
       <text class="start-text">开始问诊</text>
     </button>
 
-    <!-- 测试按钮 -->
-    <button class="test-btn" bindtap="goToTest">
-      <text class="test-icon">🧪</text>
-      <text class="test-text">API功能测试</text>
-    </button>
 
-    <!-- 云开发诊断按钮 -->
-    <button class="diagnose-btn" bindtap="goToDiagnose">
-      <text class="diagnose-icon">🔧</text>
-      <text class="diagnose-text">云开发诊断</text>
-    </button>
 
     <!-- 底部提示 -->
     <view class="bottom-tips">
