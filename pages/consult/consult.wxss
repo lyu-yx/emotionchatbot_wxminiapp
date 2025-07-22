@@ -825,3 +825,26 @@
     transform: translateY(-1px);
   }
 }
+
+.option-buttons {
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option-btn {
+  flex: 1 1 120px;
+  font-size: 14px;
+  padding: 8px 12px;
+  background-color: #07c160;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.option-btn.selected {
+  background-color: #00a56f;
+  box-shadow: 0 0 0 2px #006c3d inset;
+}

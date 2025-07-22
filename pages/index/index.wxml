@@ -17,22 +17,6 @@
       
     </view>
 
-
-
-    <!-- 输入方式选择 -->
-    <view class="input-mode-section">
-      <text class="section-title">选择输入方式</text>
-      <picker mode="selector" range="{{inputModes}}" bindchange="onModeChange">
-        <view class="mode-picker">
-          <view class="picker-content">
-            <text class="picker-icon">{{inputMode === '语音输入' ? '🎤' : '✏️'}}</text>
-            <text class="picker-text">{{inputMode}}</text>
-            <text class="picker-arrow">▼</text>
-          </view>
-        </view>
-      </picker>
-    </view>
-
     <!-- 开始按钮 -->
     <button class="start-btn" bindtap="startConsult">
       <text class="start-icon">🚀</text>

@@ -120,7 +120,7 @@
     </view>
 
     <!-- 文字输入模式 -->
-    <view wx:if="{{inputMode === '文字输入'}}" class="text-input-container">
+    <view wx:if="{{inputMode === '文字输入' && currentQuestionKey == 'A1-基础询问'}}" class="text-input-container">
       <view class="input-wrapper">
         <textarea 
           class="chat-input" 
@@ -141,7 +141,7 @@
     </view>
 
     <!-- 语音输入模式 -->
-    <view wx:if="{{inputMode === '语音输入'}}" class="voice-input-container">
+    <view wx:if="{{inputMode === '语音输入' && currentQuestionKey == 'A1-基础询问'}}" class="voice-input-container">
       <!-- 实时语音识别结果显示 -->
       <view wx:if="{{showRealtimeResult && realtimeRecognitionText}}" class="realtime-result-display">
         <view class="realtime-text">
@@ -150,7 +150,7 @@
         </view>
       </view>
       
-      <view class="voice-input-display">
+      <view class="voice-input-display" wx:if="{{autoVoiceMode}}">
         <textarea 
           class="voice-display" 
           placeholder="{{isConsultFinished ? '问诊已完成' : (autoVoiceMode ? '智能语音模式：医生播报后自动录音' : '点击录音按钮开始录音')}}"
@@ -160,7 +160,7 @@
         />
         <text class="char-count">{{inputText.length}}/500</text>
       </view>
-      <view class="voice-controls">
+      <view class="voice-controls" wx:if="{{autoVoiceMode}}">
         <!-- 自动语音模式状态显示 -->
         <view wx:if="{{autoVoiceMode}}" class="auto-voice-status">
           <view wx:if="{{isTTSPlaying}}" class="status-item tts-playing">
@@ -224,12 +224,25 @@
       </view>
     </view>
 
+    <view wx:if="{{currentOptions.length > 0}}" class="option-buttons">
+      <button 
+        wx:for="{{currentOptions}}" 
+        wx:key="index" 
+        class="option-btn {{isOptionSelected(item) ? 'selected' : ''}}" 
+        bindtap="onOptionSelect" 
+        data-option="{{item}}"
+      >
+        {{item}}
+      </button>
+    </view>
+
     <!-- 操作提示 -->
     <view class="input-tips" wx:if="{{!isConsultFinished}}">
       <text class="tip-text">
         {{isWaitingResponse ? '正在等待回复...' : '回答完成后点击发送继续问诊'}}
       </text>
     </view>
+    
   </view>
 
   <!-- 重新开始按钮 -->

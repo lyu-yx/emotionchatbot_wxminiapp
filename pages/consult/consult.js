@@ -7,289 +7,384 @@ Page({
   data: {
     // 决策树式问诊数据结构 - 参考medical_chatbot.py的consultation_flow
     questionTree: {
-      "T1-基础信息": {
-        question: "首先，请告诉我您的性别和年龄？",
-        fields: ["gender", "age"],
+      "A1-基础询问": {
+        condition: "始终提问",
+        question: "可以大概描述一下您哪里不舒服吗？是发烧、头痛还是其他病症？",
+        fields: ["fever", "headache", "dizziness","eye_symptoms","ear_symptoms", "nose_symptoms", "throat_symptoms", "cough", "appetite", "urine", "bowel", "sleep_quality","phlegm"],
         condition: "始终提问",
         followUps: [
           {
-            condition: "始终提问",
-            question: "您有没有慢性病，比如高血压、高血糖、高血脂、胃病等？是否在治疗？是否有药物过敏？",
-            fields: ["chronic_disease", "treatment", "drug_allergy"]
+            question: "请告诉我您的性别和年龄？",
+            fields: ["gender", "age"],
+            condition: "restart == false",
           }
         ]
       },
-      "T2-发热寒热": {
-        question: "最近有没有发烧或怕冷？",
-        fields: ["fever", "cold_feeling"],
-        condition: "始终提问",
+      "B1-发热寒热": {
+        question: "您刚才提到发热或怕冷，请问发烧大概多少度？",
+        condition: "(fever == true || cold_feeling == true) && fever_temperature == \"\"",
+        fields: ["fever_temperature"],
+        options: ["低热（<38℃）", "中度发热（38-39℃）", "高热（39-40℃）", "超高热（>40℃）"],
         followUps: [
           {
-            condition: "fever == true",
-            question: "发烧大概多少度？哪个时间段最明显？",
-            fields: ["fever_temperature", "fever_time"]
+            condition: "fever == true && fever_duration == \"\"",
+            question: "发热持续多久？",
+            fields: ["fever_duration"],
+            options: ["一天以内", "2-3天", "4-7天", "超过一周"]
           },
           {
-            condition: "cold_feeling == true",
+            condition: "cold_feeling == true && cold_relief ==\"\"",
             question: "穿衣服后能缓解怕冷吗？",
-            fields: ["cold_relief"]
+            fields: ["cold_relief"],
+            options: ["可以缓解", "不能缓解", "不确定"]
           },
           {
-            condition: "fever == true || cold_feeling == true",
+            condition: "(fever == true || cold_feeling == true) && sweating == \"\"",
             question: "有没有出汗？是清水汗还是黏汗？",
-            fields: ["sweating", "sweat_type"]
+            fields: ["sweating"],
+            options: ["无出汗", "清汗", "黏汗", "盗汗"]
+          },
+           {
+            condition: "fever == true && infection_exposure == \"\"",
+            question: "近期有感冒接触史或外出旅行史吗？",
+            fields: ["infection_exposure"],
+            options: ["有", "无", "不确定"]
           }
         ]
       },
-      "T3-头痛头晕": {
-        question: "最近有没有头痛或头晕？",
-        fields: ["headache", "dizziness"],
-        condition: "始终提问",
+      "B2-头痛头晕": {
+        question: "您提到了头痛或头晕，请问是否有伴随症状？",
+        condition: "(headache == true || dizziness == true) && associated_head_symptoms == \"\"",
+        fields: ["associated_head_symptoms"],
+        options: ["恶心", "呕吐", "耳鸣", "无伴随症状"],
         followUps: [
           {
-            condition: "headache == true",
-            question: "头痛在什么部位？是胀痛、刺痛还是抽痛？",
-            fields: ["headache_location", "headache_type"]
+            condition: "headache == true && headache_location == \"\"",
+            question: "头痛在什么部位？",
+            fields: ["headache_location"],
+            options: ["全头痛", "偏头痛", "后脑痛", "额头痛", "不确定"]
           },
           {
-            condition: "dizziness == true",
-            question: "是头部昏沉还是天旋地转？有没有伴随恶心呕吐？",
-            fields: ["dizziness_type", "nausea"]
+            condition: "dizziness == true && dizziness_type == \"\"",
+            question: "头晕是什么类型？",
+            fields: ["dizziness_type"],
+            options: ["头重脚轻", "天旋地转", "黑蒙", "视物模糊"]
+          },
+        ]
+      },
+      "B3-咽喉咳嗽": {
+        question: "可以描述一下您的咽喉情况吗？",
+        condition: "(throat_symptoms == true || cough == true) && throat_type == \"\"",
+        fields: ["throat_type"],
+        options: ["干痛", "肿痛", "痒", "吞咽困难"],
+        followUps: [
+           
+          {
+            condition: "cough == true && cough_type == \"\"",
+            question: "咳嗽是间断还是持续？",
+            fields: ["cough_type"],
+            options: ["干咳", "阵发性咳嗽", "持续性咳嗽"]
+          },
+          {
+            condition: "cough == true && phlegm == \"\"",
+            question: "咳嗽的时候是否有痰？",
+            fields: ["phlegm"],
+            options: ["是", "否"]
+          },
+          {
+            condition: "cough == true && cough_duration == \"\"",
+            question: "咳嗽持续了多长时间？",
+            fields: ["cough_duration"],
+            options: ["<3天", "3-7天", "超过一周"]
+          },
+          {
+            condition: "phlegm == true && phlegm_status == \"\"",
+            question: "痰是什么样子的？",
+            fields: ["phlegm_status"],
+            options: ["白色稀痰", "黄色黏痰", "带血丝痰"]
+          },
+        ]
+      },
+      "B4-五官": {
+        condition: "(eye_symptoms == true || ear_symptoms == true || nose_symptoms == true) && eye_status == \"\"",
+        question: "眼部是否有着干涩、流泪、红肿或者畏光的症状？",
+        fields: ["eye_status"],
+        options: ["干涩", "流泪", "红肿", "畏光"],
+        followUps: [
+          {
+            condition: "ear_symptoms == true && ear_status == \"\"",
+            question: "耳部是否有着耳鸣、耳痛或者听力下降的症状？",
+            fields: ["ear_status"],
+            options: ["耳鸣", "耳痛", "听力下降"],
+          },
+          {
+            condition: "nose_symptoms == true && nose_status == \"\"",
+            question: "鼻部是否有着鼻塞、流涕或者嗅觉减退的症状？",
+            fields: ["nose_status"],
+            options: ["鼻塞", "流涕", "嗅觉减退"],
           }
         ]
       },
-      "T4-五官": {
-        question: "眼睛有没有不适，比如干涩、发痒、流泪或视力问题？",
-        fields: ["eye_symptoms"],
-        condition: "始终提问",
+      "B5-食欲饮水": {
+        question: "关于食欲的症状，请您具体描述一下，是食欲不振还是食欲过剩?",
+        condition: "appetite == true && appetite_symptoms == \"\"",
+        fields: ["appetite_symptoms"],
+        options: ["食欲不振", "食欲过剩"],
+        followUps: [
+          {
+            condition: "appetite == true && mouth_symptoms == \"\"",
+            question: "有没有口苦、口干、反酸等症状？",
+            fields: ["mouth_symptoms"],
+            options: ["口苦", "口干", "反酸"],
+          },
+          {
+            condition: "appetite == true && drinking_habits == \"\"",
+            question: "喝水喜欢冷水还是热水？",
+            fields: ["drinking_habits"],
+            options: ["冷水", "热水"]
+          }
+        ]
+      },
+      "B6-大小便": {
+        question: "请问您是否有着腹痛的情况？",
+        condition: "(urine == true || bowel == true) && abdominal_pain == \"\"",
+        fields: ["abdominal_pain"],
+        options: ["是", "否"],
+        followUps: [
+          {
+            condition: "bowel == true && bowel_frequency == \"\"",
+            question: "您的大便频率是怎样的？",
+            fields: ["bowel_frequency"],
+            options: ["正常", "次数增多", "便秘", "腹泻"]
+          },
+          {
+            condition: "bowel == true && bowel_shape == \"\"",
+            question: "您的大便性状是怎样的？",
+            fields: ["bowel_shape"],
+            options: ["成形", "稀水样", "硬块", "油腻", "不成形"]
+          },
+          {
+            condition: "bowel == true && stool_abnormality == \"\"",
+            question: "是否伴随黑便或血便？",
+            fields: ["stool_abnormality"],
+            options: ["黑便", "血便", "无"]
+          },
+          {
+            condition: "urine == true && urine_color == \"\"",
+            question: "您的尿液颜色是怎样的？",
+            fields: ["urine_color"],
+            options: ["正常", "偏黄", "浑浊", "带血"]
+          },
+        ]
+      },
+      "B7-睡眠情绪皮肤": {
+        question: "您的睡眠问题是什么类型？",
+        condition: "sleep_quality == true && sleep_problem_type == \"\"",
+        fields: ["sleep_problem_type"],
+        options: ["入睡困难", "多次醒来", "早醒", "睡眠良好"],
         followUps: [
           {
             condition: "始终提问",
-            question: "请问是否有耳鸣或听力问题？",
-            fields: ["ear_symptoms"]
-          },
-          {
-            condition: "始终提问", 
-            question: "鼻子是否有鼻塞、流涕？",
-            fields: ["nose_symptoms"]
+            question: "您的情绪状态怎么样？",
+            fields: ["emotional_state"],
+            options: ["平稳", "焦虑", "抑郁", "易怒"]
           }
         ]
       },
-      "T5-咽喉与咳嗽": {
-        question: "喉咙是否干、痒、疼或堵？最近有没有咳嗽？",
-        fields: ["throat_symptoms", "cough"],
-        condition: "始终提问",
-        followUps: [
-          {
-            condition: "cough == true",
-            question: "咳嗽是间断还是持续？有痰吗？",
-            fields: ["cough_type", "phlegm"]
-          },
-          {
-            condition: "phlegm == true",
-            question: "痰的颜色和质地如何？容易咳出吗？",
-            fields: ["phlegm_color", "phlegm_texture", "phlegm_easy"]
-          },
-          {
-            condition: "cough == true",
-            question: "是否伴随胸闷或心悸？",
-            fields: ["chest_tightness", "palpitation"]
-          }
-        ]
-      },
-      "T6-食欲饮水": {
-        question: "最近食欲如何？有没有偏好吃冷食或热食？",
-        fields: ["appetite"],
-        condition: "始终提问",
+      "B8-女性月经": {
+        question: "请问您的月经周期正常吗？",
+        fields: ["menstrual_cycle"],
+        condition: "gender == 'female' && menstrual_cycle == \"\"",
+        options: ["正常", "异常"],
         followUps: [
           {
             condition: "始终提问",
-            question: "有没有口苦、口干、反酸等口腔症状？",
-            fields: ["mouth_symptoms"]
+            question: "白带情况正常吗？",
+            fields: ["leucorrhea"],
+            options: ["正常", "异常"]
           },
           {
             condition: "始终提问",
-            question: "平时喝水习惯是怎样的？喜欢热水还是冷水？",
-            fields: ["drinking_habits"]
-          }
-        ]
-      },
-      "T7-大小便与腹痛": {
-        question: "小便通畅吗？颜色如何？",
-        fields: ["urine_flow", "urine_color"],
-        condition: "始终提问",
-        followUps: [
+            question: "月经的颜色和量正常吗？",
+            fields: ["leucorrhea"],
+            options: ["正常", "异常"]
+          },
           {
             condition: "始终提问",
-            question: "大便频率和性状如何？有没有腹痛？",
-            fields: ["bowel_frequency", "bowel_shape", "abdominal_pain"]
+            question: "您是否有着痛经的情况？",
+            fields: ["dysmenorrhea"],
+            options: ["是", "否"]
           }
         ]
       },
-      "T8-睡眠情绪": {
-        question: "最近睡眠质量如何？情绪状态怎么样？",
-        fields: ["sleep_quality", "mood"],
-        condition: "始终提问",
-        followUps: [
-          {
-            condition: "始终提问",
-            question: "有没有皮肤问题，比如瘙痒、红疹等？",
-            fields: ["skin_symptoms"]
-          }
-        ]
-      },
-      "T9-女性月经": {
-        question: "月经周期正常吗？颜色和量如何？是否痛经？",
-        fields: ["menstrual_cycle", "menstrual_color", "dysmenorrhea"],
-        condition: "gender == 'female'",
-        followUps: [
-          {
-            condition: "gender == 'female'",
-            question: "白带情况如何？",
-            fields: ["leucorrhea"]
-          }
-        ]
+      "B9-病情补充": {
+        question: "是否还有别的症状？",
+        fields: ["restart"],
+        condition: "restart == false",
+        options: ["是", "否"],
       }
     },
     
     // 用户回答记录
     patientData: {
       // 基础信息
-      gender: "",                // 性别
-      age: "",                   // 年龄
-      chronic_disease: "",       // 慢性病
-      treatment: "",             // 治疗情况
-      drug_allergy: "",          // 药物过敏
-      
+      gender: "",                  // 性别: "male"/"female"
+      age: "",                     // 年龄
+      chronic_disease: "",         // 慢性疾病
+      treatment: "",               // 是否在治疗
+      drug_allergy: "",            // 药物过敏
+
       // 发热寒热
-      fever: false,              // 是否发热
-      fever_temperature: "",     // 发热温度
-      fever_time: "",            // 发热时间段
-      cold_feeling: false,       // 是否怕冷
-      cold_relief: "",           // 怕冷缓解
-      sweating: false,           // 是否出汗
-      sweat_type: "",            // 汗液类型
-      
+      fever: false,                // 是否发热
+      fever_temperature: "",       // 发热温度
+      fever_duration: "",          // 发热持续时间
+      cold_feeling: false,         // 是否怕冷
+      cold_relief: "",             // 怕冷缓解情况
+      sweating: "",                // 出汗情况: ["无出汗", "清汗", "黏汗", "盗汗"]
+      infection_exposure: "",      // 是否有接触史或旅行史
+
       // 头痛头晕
-      headache: false,           // 是否头痛
-      headache_location: "",     // 头痛部位
-      headache_type: "",         // 头痛类型
-      dizziness: false,          // 是否头晕
-      dizziness_type: "",        // 头晕类型
-      nausea: false,             // 是否恶心
-      
-      // 五官
-      eye_symptoms: "",          // 眼部症状
-      ear_symptoms: "",          // 耳部症状
-      nose_symptoms: "",         // 鼻部症状
-      
+      headache: false,             // 是否头痛
+      headache_location: "",       // 头痛部位
+      dizziness: false,            // 是否头晕
+      dizziness_type: "",          // 头晕类型
+      associated_head_symptoms: [],// 恶心、呕吐、耳鸣等（多选）
+
+      // 五官症状
+      eye_symptoms: false,         // 是否有眼部症状
+      eye_status: [],              // ["干涩", "流泪", "红肿", "畏光"]
+      ear_symptoms: false,         // 是否有耳部症状
+      ear_status: [],              // ["耳鸣", "耳痛", "听力下降"]
+      nose_symptoms: false,        // 是否有鼻部症状
+      nose_status: [],             // ["鼻塞", "流涕", "嗅觉减退"]
+
       // 咽喉与咳嗽
-      throat_symptoms: "",       // 咽部症状
-      cough: false,              // 是否咳嗽
-      cough_type: "",            // 咳嗽类型
-      phlegm: false,             // 是否有痰
-      phlegm_color: "",          // 痰颜色
-      phlegm_texture: "",        // 痰质地
-      phlegm_easy: "",           // 是否易咳出
-      chest_tightness: false,    // 是否胸闷
-      palpitation: false,        // 是否心悸
-      
+      throat_symptoms: false,      // 是否有咽部症状
+      throat_type: "",             // ["干痛", "肿痛", "痒", "吞咽困难"]
+      cough: false,                // 是否咳嗽
+      cough_type: "",              // 咳嗽类型
+      phlegm: false,               // 是否有痰
+      phlegm_status: "",           // 痰的类型
+      cough_duration: "",          // 咳嗽持续时间
+
       // 食欲饮水
-      appetite: "",              // 食欲情况
-      mouth_symptoms: "",        // 口腔症状
-      drinking_habits: "",       // 饮水习惯
-      
+      appetite: false,             // 是否存在食欲问题
+      appetite_symptoms: "",       // ["食欲不振", "食欲过剩"]
+      mouth_symptoms: [],          // ["口苦", "口干", "反酸"]
+      drinking_habits: "",         // ["冷水", "热水"]
+
       // 大小便与腹痛
-      urine_flow: "",            // 小便情况
-      urine_color: "",           // 尿色
-      bowel_frequency: "",       // 大便频率
-      bowel_shape: "",           // 大便性状
-      abdominal_pain: "",        // 腹痛情况
-      
-      // 睡眠情绪
-      sleep_quality: "",         // 睡眠质量
-      mood: "",                  // 情绪状态
-      skin_symptoms: "",         // 皮肤症状
-      
-      // 女性月经
-      menstrual_cycle: "",       // 月经周期
-      menstrual_color: "",       // 月经颜色与量
-      dysmenorrhea: false,       // 是否痛经
-      leucorrhea: ""             // 白带情况
+      urine: false,                // 是否关注小便
+      urine_color: "",             // ["正常", "偏黄", "浑浊", "带血"]
+      bowel: false,                // 是否关注大便
+      bowel_frequency: "",         // ["正常", "次数增多", "便秘", "腹泻"]
+      bowel_shape: "",             // ["成形", "稀水样", "硬块", "油腻", "不成形"]
+      stool_abnormality: "",       // ["无", "黑便", "血便"]
+      abdominal_pain: "",          // ["是", "否"]
+      abdominal_pain_location: "", // 腹痛位置
+      abdominal_pain_type: "",     // 腹痛性质
+
+      // 睡眠与情绪
+      sleep_quality: false,        // 是否有睡眠问题
+      sleep_problem_type: "",      // ["入睡困难", "多次醒来", "早醒", "睡眠良好"]
+      emotional_state: "",         // ["平稳", "焦虑", "抑郁", "易怒"]
+
+      // 女性相关
+      menstrual_cycle: "",         // ["正常", "异常"]
+      menstrual_status: "",        // ["正常", "异常"]，月经颜色与量
+      dysmenorrhea: false,         // 是否痛经
+      leucorrhea: "",              // ["正常", "异常"]
+
+      // 病情补充（仅限一次）
+      restart: false               // 是否有其他症状
     },
+
     
     // 原始回答记录（用于LLM分析）
     rawResponses: {
-      "T1-基础信息": "",
-      "T2-发热寒热": "",
-      "T3-头痛头晕": "",
-      "T4-五官": "",
-      "T5-咽喉与咳嗽": "",
-      "T6-食欲饮水": "",
-      "T7-大小便与腹痛": "",
-      "T8-睡眠情绪": "",
-      "T9-女性月经": ""
+      "A1-基础询问": "",
+      "B1-发热寒热": "",
+      "B2-头痛头晕": "",
+      "B3-咽喉咳嗽": "",
+      "B4-五官": "",
+      "B5-食欲饮水": "",
+      "B6-大小便": "",
+      "B7-睡眠情绪皮肤": "",
+      "B8-女性月经": "",
+      "B9-病情补充": ""
     },
-    messageList: [],               // 对话消息列表
-    inputText: "",                 // 当前输入文本
-    inputFocus: false,             // 输入框焦点状态
-    inputMode: wx.getStorageSync("inputMode") || "文字输入",
-    showVoiceInput: false,         // 控制语音输入组件显示
-    currentVideo: '',              //当前播放的视频
+    messageList: [],                  // 对话消息列表
+    inputText: "",                    // 当前输入文本
+    inputFocus: false,                // 输入框焦点状态
+    inputMode: "语音输入",
+    showVoiceInput: false,            // 控制语音输入组件显示
+    currentVideo: '',                 // 当前播放的视频
     showImage: false,
-    imageUrl: '/cover.jpg', // 统一封面图
-    currentQuestionKey: "T1-基础信息", // 当前问题键值
-    currentFollowUpIndex: -1,      // 当前追问索引
-    isWaitingResponse: false,      // 是否等待系统回复
-    isConsultFinished: false,      // 问诊是否完成
-    scrollIntoView: "",            // 滚动到指定消息
-    isInputDisabled: false,        // 输入是否禁用
-    isRecording: false,            // 是否正在录音
-    voiceRecognitionResult: "",    // 语音识别结果缓存
-    isTTSPlaying: false,           // TTS是否正在播放
-    silenceTimer: null,            // 静音检测定时器
-    silenceThreshold: 1500,        // 静音阈值1.5秒
-    autoVoiceMode: false,          // 自动语音模式
-    isPreparingRecording: false,   // 防止重复录音启动
-    videoEndedCallback: null,      // 播放结束后触发的 callback
+    imageUrl: '/cover.jpg',           // 统一封面图
+    currentQuestionKey: "A1-基础询问", // 当前问题键值
+    currentFollowUpIndex: -1,         // 当前追问索引
+    isWaitingResponse: false,         // 是否等待系统回复
+    isConsultFinished: false,         // 问诊是否完成
+    scrollIntoView: "",               // 滚动到指定消息
+    isInputDisabled: false,           // 输入是否禁用
+    isRecording: false,               // 是否正在录音
+    voiceRecognitionResult: "",       // 语音识别结果缓存
+    isTTSPlaying: false,              // TTS是否正在播放
+    silenceTimer: null,               // 静音检测定时器
+    silenceThreshold: 1500,           // 静音阈值1.5秒
+    autoVoiceMode: false,             // 自动语音模式
+    isPreparingRecording: false,      // 防止重复录音启动
+    videoEndedCallback: null,         // 播放结束后触发的 callback
+    currentOptions: [],
+    selectedOptions: [],              // 多选时使用
+    isMultiSelect: false,             // 是否多选模式
     // 实时语音识别相关
-    videoEndedCallback: null,      // 播放结束后触发的 callback
-    realtimeASR: null,             // 实时语音识别实例
-    isRealtimeRecording: false,    // 是否正在实时录音
-    realtimeRecognitionText: "",   // 实时识别文本
-    showRealtimeResult: false,     // 是否显示实时识别结果
-    useRealtimeASR: true,          // 是否使用实时语音识别
+    videoEndedCallback: null,         // 播放结束后触发的 callback
+    realtimeASR: null,                // 实时语音识别实例
+    isRealtimeRecording: false,       // 是否正在实时录音
+    realtimeRecognitionText: "",      // 实时识别文本
+    showRealtimeResult: false,        // 是否显示实时识别结果
+    useRealtimeASR: true,             // 是否使用实时语音识别
       // LLM配置
     llmConfig: LLM_CONFIG,
     
     videoMap: {
-      "首先，请告诉我您的性别和年龄？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome1.mp4",
+      "您好！我是您的智能问诊助手，接下来我会通过提问来了解您的健康状况，这样能帮助医生更好地了解您的情况。准备好了吗？我们开始第一个问题。": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/您好.mp4",
+      "请告诉我您的性别？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/请告诉我性别.mp4",
+      "请告诉我您的性别和年龄？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/请告诉我您的性别和年龄.mp4",
       "您有没有慢性病，比如高血压、高血糖、高血脂、胃病等？是否在治疗？是否有药物过敏？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T1基础信息追问11.mp4",
-      "最近有没有发烧或怕冷？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热主问题1.mp4",
-      "发烧大概多少度？哪个时间段最明显？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问11.mp4",
+      "可以大概描述一下您哪里不舒服吗？是发烧、头痛还是其他病症？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/可以描述.mp4",
+      "您刚才提到发热或怕冷，请问发烧大概多少度？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/您刚才提到.mp4",
+      "发热持续多久？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/发热持续多久.mp4",
       "穿衣服后能缓解怕冷吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问21.mp4",
       "有没有出汗？是清水汗还是黏汗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问31.mp4",
-      "最近有没有头痛或头晕？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕主问题1.mp4",
-      "头痛在什么部位？是胀痛、刺痛还是抽痛？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问11.mp4",
-      "是头部昏沉还是天旋地转？有没有伴随恶心呕吐？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问21.mp4",
-      "眼睛有没有不适，比如干涩、发痒、流泪或视力问题？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官主问题1.mp4",
-      "请问是否有耳鸣或听力问题？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问11.mp4",
-      "鼻子是否有鼻塞、流涕？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问21.mp4",
-      "喉咙是否干、痒、疼或堵？最近有没有咳嗽？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽主问题1.mp4",
-      "咳嗽是间断还是持续？有痰吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问11.mp4",
-      "痰的颜色和质地如何？容易咳出吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问21.mp4",
-      "是否伴随胸闷或心悸？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问31.mp4",
-      "最近食欲如何？有没有偏好吃冷食或热食？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水主问题1.mp4",
-      "有没有口苦、口干、反酸等口腔症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问11.mp4",
-      "平时喝水习惯是怎样的？喜欢热水还是冷水？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问21.mp4",
-      "小便通畅吗？颜色如何？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛主问题1.mp4",
-      "大便频率和性状如何？有没有腹痛？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛追问11.mp4",//大便情况如何，次数和形状是否正常
-      "最近睡眠质量如何？情绪状态怎么样？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪主问题1.mp4",//最近睡眠是否良好，容易入睡吗
-      "有没有皮肤问题，比如瘙痒、红疹等？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪追问11.mp4",//皮肤有没有异常，比如瘙痒、红疹、湿疹等？
-      "月经周期正常吗？颜色和量如何？是否痛经？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经主问题1.mp4",//请问您的月经是否规律？颜色量是否正常
-      "白带情况如何？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经追问11.mp4",//有没有痛经白带，情况如何
-      "您好！我是您的智能问诊助手，接下来我会通过提问来了解您的健康状况，这样能帮助医生更好地了解您的情况。准备好了吗？我们开始第一个问题。": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome1.mp4",
-      "感谢您的配合！所有问题已经回答完毕，正在为您生成健康建议和症状总结...": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/finish1.mp4",//非常感谢您的配合，问诊已经完成，我已经为您整理了一份问诊摘要，稍后会交给医生进行专业诊断，祝您早日康复
+      "近期有感冒接触史或外出旅行史吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/近期有感冒.mp4",
+      "您提到了头痛或头晕，请问是否有伴随症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/您提到了头痛.mp4",
+      "头痛在什么部位？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/头痛在什么部位.mp4",
+      "头晕是什么类型？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/头晕是什么类型.mp4",
+      "可以描述一下您的咽喉情况吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/可以描述一下您的咽喉情况吗.mp4",
+      "咳嗽是间断还是持续？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/咳嗽是间断还是持续.mp4",
+      "咳嗽的时候是否有痰？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/咳嗽是否有痰.mp4",
+      "咳嗽持续了多长时间？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/咳嗽持续了多长时间.mp4",
+      "痰是什么样子的？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/痰是什么样子的.mp4",
+      "眼部是否有着干涩、流泪、红肿或者畏光的症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/眼部是否有着.mp4",
+      "耳部是否有着耳鸣、耳痛或者听力下降的症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/耳部是否有.mp4",
+      "鼻部是否有着鼻塞、流涕或者嗅觉减退的症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/鼻部是否有.mp4",
+      "关于食欲的症状，请您具体描述一下，是食欲不振还是食欲过剩?": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/关于食欲的症状.mp4",
+      "有没有口苦、口干、反酸等症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/有没有口苦.mp4",
+      "喝水喜欢冷水还是热水？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/喝水喜欢.mp4",
+      "请问您是否有着腹痛的情况？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/请问您是否有着腹痛的情况.mp4",
+      "您的大便频率是怎样的？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/您的大便.mp4",
+      "您的大便性状是怎样的？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/您的大便形状是怎样的.mp4",
+      "是否伴随黑便或血便？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/是否伴随黑便.mp4",
+      "您的尿液颜色是怎样的？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/您的尿液颜色.mp4",
+      "您的情绪状态怎么样？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/您的情绪状态.mp4",
+      "请问您的月经周期正常吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/请问您的月经.mp4",
+      "白带情况正常吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/白带情况.mp4",
+      "月经的颜色和量正常吗？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/月经的颜色.mp4",
+      "您是否有着痛经的情况？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/您是否有着痛经的情况.mp4",
+      "是否还有别的症状？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/是否还有别的症状.mp4",
+      "感谢您的配合！所有问题已经回答完毕，正在为您生成健康建议和症状总结...": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/finish1.mp4",
       "您的回答似乎与问题不太相关，能否请您重新回答一下？": "https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/irrelevant_answer1.mp4"
     }
   },
@@ -307,7 +402,7 @@ Page({
   onLoad() {
     console.log('问诊页面开始加载');
     // 重新获取输入模式并更新数据
-    const inputMode = wx.getStorageSync("inputMode") || "文字输入";
+    const inputMode = "语音输入";
     this.setData({ inputMode });
     // 先初始化语音相关设置
     this.initVoiceSettings();
@@ -352,38 +447,7 @@ Page({
     const matchedVideo = Object.entries(this.data.videoMap).find(([questionText]) =>
       this.data.currentQuestion.question.includes(questionText)
     );
-
-    // 视频URL -> 时长 映射
-    const videoDurations = {
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/welcome.mp4': 16000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T1基础信息追问1.mp4': 8000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热主问题.mp4': 3000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问1.mp4': 5000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问2.mp4': 4000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T2发热寒热追问3.mp4': 5000, 
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕主问题.mp4': 3000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问1.mp4': 7000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T3头痛头晕追问2.mp4': 6000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官主问题.mp4': 7000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问1.mp4': 4000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T4五官追问2.mp4': 4000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽主问题.mp4': 5000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问1.mp4': 5000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问2.mp4': 4000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T5咽喉与咳嗽追问3.mp4': 4000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水主问题.mp4': 5000, 
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问1.mp4': 5000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T6食欲饮水追问2.mp4': 6000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛主问题.mp4': 4000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T7大小便与腹痛追问1.mp4': 5000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪主问题.mp4': 4000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T8睡眠情绪追问1.mp4': 6000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经主问题.mp4': 5000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/T9女性月经追问1.mp4': 4000,        
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/finish.mp4': 11000,
-      'https://xiaochengxu-1365640006.cos.ap-beijing.myqcloud.com/irrelevant_answer.mp4': 6000
-    };
-
+    
     if (matchedVideo) {
       return videoDurations[url] || 16000;
     }
@@ -391,13 +455,119 @@ Page({
     return 16000;
   },
 
+  //处理选项相关
+  updateCurrentOptions(currentQuestion, followUpIndex) {
+    let options = [];
+    let multiSelect = false;
+
+    const followUp = currentQuestion.followUps?.[followUpIndex];
+
+    if (followUp) {
+      // 优先使用 followUp 的配置
+      options = followUp.options || [];
+      multiSelect = followUp.multiselect === true;
+    } else {
+      // fallback 到主问题的配置
+      options = currentQuestion.options || [];
+      multiSelect = currentQuestion.multiselect === true;
+    }
+    // 更新当前选项和多选状态
+    this.setData({
+      currentOptions: options,
+      isMultiSelect: multiSelect,
+      selectedOptions: []
+    });
+    console.log('当前选项来自：', followUp ? 'followUp' : '主问题');
+    console.log('选项内容:', options);
+  },
+
+  isOptionSelected(option) {
+    return this.data.selectedOptions.includes(option);
+  },
+
+  async onOptionSelect(e) {
+    const selected = e.currentTarget.dataset.option;
+    const { isMultiSelect, selectedOptions } = this.data;
+
+    // 触发视频播放（非强制重播）
+    this.playVideoOnly(selected, false);
+
+    if (isMultiSelect) {
+      // 多选处理逻辑
+      const index = selectedOptions.indexOf(selected);
+      if (index > -1) {
+        selectedOptions.splice(index, 1);
+      } else {
+        selectedOptions.push(selected);
+      }
+      this.setData({ selectedOptions: [...selectedOptions] });
+      return; // 多选不发送 LLM，等待“确认”按钮等触发
+    }
+
+    // 单选逻辑（发送给 LLM）
+    const timestamp = new Date().toISOString();
+    const userMessage = {
+      id: this.generateMessageId(),
+      role: "user",
+      text: selected,
+      timestamp: timestamp,
+      formattedTime: this.formatTime(timestamp),
+      typing: false
+    };
+
+    // 🔥🔥 判断是否是 B9 问题的“是”回答
+    if (this.data.currentQuestionKey === 'B9-病情补充' && selected === '是') {
+      this.setData({
+        'patientData.restart': true
+      });
+    }
+
+    // 更新消息列表 & 禁止再次输入
+    this.setData({
+      messageList: [...this.data.messageList, userMessage],
+      currentOptions: [], // 清空选项按钮
+      selectedOptions: [],
+      isWaitingResponse: true,
+      isInputDisabled: true
+    });
+
+    this.scrollToBottom();
+    // 调用问诊流程，推进下一个问题
+    try {
+      await this.processNextQuestion();
+    } catch (error) {
+      console.error('processNextQuestion 调用错误:', error);
+      wx.showToast({ title: '问诊流程异常', icon: 'none' });
+      this.setData({
+        isWaitingResponse: false,
+        isInputDisabled: false
+      });
+    }
+  },
+
   /**
    * 初始化聊天对话
    */
-  initializeChat() {
+  async initializeChat() {
     const currentQuestion = this.getCurrentQuestion();
     const timestamp = new Date().toISOString();
     
+    // ✅ 安全检查：防止 currentQuestion 为 undefined 或 question 字段缺失
+    if (!currentQuestion || !currentQuestion.question) {
+      console.error('初始化失败：currentQuestion 无效', currentQuestion);
+      const errorMessage = {
+        id: this.generateMessageId(),
+        role: "system",
+        text: "抱歉，初始化问诊出错，请稍后重试。",
+        timestamp,
+        formattedTime: this.formatTime(timestamp),
+        typing: false
+      };
+      this.setData({
+        messageList: [errorMessage]
+      });
+      return;
+    }
     const welcomeMessage = {
       id: this.generateMessageId(),
       role: "system",
@@ -406,7 +576,7 @@ Page({
       formattedTime: this.formatTime(timestamp),
       typing: false
     };
-    
+
     const firstQuestionMessage = {
       id: this.generateMessageId(),
       role: "system", 
@@ -416,27 +586,30 @@ Page({
       typing: false
     };
 
+    // ✅ 有 options 时才设置，否则设为空数组
+    const options = currentQuestion.options || [];
+
     this.setData({
-      messageList: [welcomeMessage, firstQuestionMessage]
+      messageList: [welcomeMessage, firstQuestionMessage],
+      currentOptions: currentQuestion.options || [],   // ✅ 设置选项按钮
+      selectedOptions: [],
+      isMultiSelect: !!currentQuestion.multiselect,    // 默认 false，如果题目支持多选就设为 true
+      autoVoiceMode: true,                             // A1环节启用语音输入
+      useRealtimeASR: this.data.llmConfig.enableRealtimeASR !== false
     });
 
     // 滚动到最新消息
     this.scrollToBottom();
-    
-    console.log('初始化聊天完成，检查是否需要视频播报');
-    console.log('当前autoVoiceMode:', this.data.autoVoiceMode);
-    console.log('当前inputMode:', this.data.inputMode);
-    
-    // 播放欢迎视频和第一个问题的视频
-    const fullWelcomeText = `${welcomeMessage.text} ${currentQuestion.question}`;
-    console.log('视频播报内容:', fullWelcomeText);
-    
+        
+    // 播放欢迎语
+    await this.playVideoOnly(welcomeMessage.text);
+
     if (this.data.autoVoiceMode) {
-      // 语音模式：视频播报 + 自动录音
-      this.playVideoAndStartRecording(fullWelcomeText);
+      // 语音模式：播放第一个问题并开始录音
+      this.playVideoAndStartRecording(currentQuestion.question);
     } else {
-      // 文字模式：仅视频播报
-      this.playVideoOnly(fullWelcomeText);
+      // 文字模式：播放第一个问题
+      await this.playVideoOnly(currentQuestion.question);
       
       // 文字模式下，延迟给输入框设置焦点
       setTimeout(() => {
@@ -531,9 +704,18 @@ Page({
   getNextQuestionKey() {
     const questionKeys = Object.keys(this.data.questionTree);
     const currentIndex = questionKeys.indexOf(this.data.currentQuestionKey);
-    
-    if (currentIndex >= 0 && currentIndex < questionKeys.length - 1) {
-      return questionKeys[currentIndex + 1];
+
+    // 如果当前是B9且选择"是"，跳转到A1-基础询问
+    if (this.data.currentQuestionKey === "B9-病情补充" && this.data.patientData.restart) {
+      return "A1-基础询问";
+    }
+    // 仅在当前节点之后寻找下一个“条件满足”的节点
+    for (let i = currentIndex + 1; i < questionKeys.length; i++) {
+      const key = questionKeys[i];
+      const question = this.data.questionTree[key];
+      if (this.checkQuestionCondition(question.condition)) {
+        return key;
+      }
     }
     
     return null;
@@ -544,51 +726,55 @@ Page({
    */
   checkQuestionCondition(condition) {
     if (condition === "始终提问") return true;
+    // ✅ 括号优先处理，递归求值返回布尔值，不拼成 "true"/"false"
+  const parenRegex = /\(([^\(\)]+)\)/;
+  while (parenRegex.test(condition)) {
+    condition = condition.replace(parenRegex, (_, inner) => {
+      return this.checkQuestionCondition(inner) ? "T" : "F";  // 用 T/F 标记而非 "true"/"false"
+    });
+  }
 
-    // ✅ 最优先处理 || 复合条件
-    if (condition.includes("||")) {
-      const parts = condition.split("||").map(s => s.trim());
-      return parts.some(part => this.checkQuestionCondition(part));
+  // ✅ 替换掉中间的 T/F 字符为布尔值参与计算
+  if (condition.includes("&&")) {
+    const parts = condition.split("&&").map(s => s.trim());
+    return parts.every(part => this.checkQuestionCondition(part));
+  }
+
+  if (condition.includes("||")) {
+    const parts = condition.split("||").map(s => s.trim());
+    return parts.some(part => this.checkQuestionCondition(part));
+  }
+     // ✅ 显式布尔判断
+  if (/==\s*(true|false)/.test(condition)) {
+    const [field, value] = condition.split("==").map(s => s.trim());
+    const cleanValue = value.replace(/['"]/g, '');
+    const patientValue = this.data.patientData[field];
+    return String(patientValue) === cleanValue;
+  }
+
+  // ✅ 字符串比较，如 fever_temperature == ""
+  if (condition.includes("==")) {
+    const [field, value] = condition.split("==").map(s => s.trim());
+    const cleanValue = value.replace(/['"]/g, '');
+    const patientValue = this.data.patientData[field];
+
+    if (field === 'gender') {
+      if (!patientValue) return false;
+      const normalizeGender = (val) => {
+        if (!val) return "";
+        if (["male", "男", "m", "1"].includes(val.toLowerCase())) return "male";
+        if (["female", "女", "f", "0"].includes(val.toLowerCase())) return "female";
+        return val.toLowerCase();
+      };
+      return normalizeGender(patientValue) === normalizeGender(cleanValue);
     }
 
-    // ✅ 然后处理显式布尔条件
-    if (/==\s*(true|false)/.test(condition)) {
-      const [field, value] = condition.split("==").map(s => s.trim());
-      const cleanValue = value.replace(/['"]/g, '');
-      const patientValue = this.data.patientData[field];
-      console.log(`检查条件: ${field} == ${cleanValue}, 患者数据: ${patientValue}`);
-      return String(patientValue) === cleanValue;
-    }
+    return String(patientValue ?? "") === cleanValue;
+  }
 
-    // ✅ 特殊字段处理
-    if (condition.includes("==")) {
-      const [field, value] = condition.split("==").map(s => s.trim());
-      const cleanValue = value.replace(/['"]/g, '');
-      const patientValue = this.data.patientData[field];
-      if (field === 'gender') {
-        if (!patientValue) {
-          console.log('性别未确定，跳过女性专属问题');
-          return false;
-        }
-        const normalizeGender = (val) => {
-          if (!val) return "";
-          if (["male", "男", "m", "1"].includes(val.toLowerCase())) return "male";
-          if (["female", "女", "f", "0"].includes(val.toLowerCase())) return "female";
-          return val.toLowerCase();
-        };
-        const normalizedPatientGender = normalizeGender(patientValue);
-        const normalizedConditionGender = normalizeGender(cleanValue);
-        const result = normalizedPatientGender === normalizedConditionGender;
-        console.log(`性别匹配结果: ${result}`);
-        console.log("🌈 原始性别值:", patientValue);
-        console.log("🌈 条件值:", cleanValue);
-        console.log("🌈 归一化后:", normalizedPatientGender, "==", normalizedConditionGender);
-        console.log("🌈 匹配结果:", result);
-        return result;
-      }
-      console.log(`检查条件: ${field} == ${cleanValue}, 患者数据: ${patientValue}`);
-      return patientValue === cleanValue;
-    }
+  // ✅ 判断是否是 T / F 替代标志
+  if (condition === "T") return true;
+  if (condition === "F") return false;
     return true;
   },
 
@@ -1224,8 +1410,7 @@ Page({
     console.error('相关性检查失败:', error);
     return true; // 默认继续问
   }
-}
-,
+},
 
   /**
    * 调用LLM进行相关性判断
@@ -1257,52 +1442,74 @@ Page({
   async extractStructuredData(answer, fields) {
     try {
       const fieldsDescription = {
-        "gender": "性别(male/female)",
-        "age": "年龄(数字)",
-        "chronic_disease": "慢性病类型",
-        "treatment": "治疗方式",
-        "drug_allergy": "药物过敏情况",
-        "fever": "是否发热(true/false)",
-        "fever_temperature": "发热温度",
-        "fever_time": "发热时间段",
-        "cold_feeling": "是否怕冷(true/false)",
-        "cold_relief": "怕冷缓解情况",
-        "sweating": "是否出汗(true/false)",
-        "sweat_type": "汗液类型",
-        "headache": "是否头痛(true/false)",
-        "headache_location": "头痛部位",
-        "headache_type": "头痛类型",
-        "dizziness": "是否头晕(true/false)",
-        "dizziness_type": "头晕类型",
-        "nausea": "是否恶心(true/false)",
-        "eye_symptoms": "眼部症状",
-        "ear_symptoms": "耳部症状",
-        "nose_symptoms": "鼻部症状",
-        "throat_symptoms": "咽部症状",
-        "cough": "是否咳嗽(true/false)",
-        "cough_type": "咳嗽类型",
-        "phlegm": "是否有痰(true/false)",
-        "phlegm_color": "痰颜色",
-        "phlegm_texture": "痰质地",
-        "phlegm_easy": "是否易咳出",
-        "chest_tightness": "是否胸闷(true/false)",
-        "palpitation": "是否心悸(true/false)",
-        "appetite": "食欲情况",
-        "mouth_symptoms": "口腔症状",
-        "drinking_habits": "饮水习惯",
-        "urine_flow": "小便情况",
-        "urine_color": "尿色",
-        "bowel_frequency": "大便频率",
-        "bowel_shape": "大便性状",
-        "abdominal_pain": "腹痛情况",
-        "sleep_quality": "睡眠质量",
-        "mood": "情绪状态",
-        "skin_symptoms": "皮肤症状",
-        "menstrual_cycle": "月经周期",
-        "menstrual_color": "月经颜色与量",
-        "dysmenorrhea": "是否痛经(true/false)",
-        "leucorrhea": "白带情况"
-      };
+      // 基础信息
+      "gender": "性别(male/female)",
+      "age": "年龄(数字)",
+      
+      // 发热寒热
+      "fever": "是否发热(true/false)",
+      "fever_temperature": "发热温度",
+      "fever_duration": "发热持续时间",
+      "cold_feeling": "是否怕冷(true/false)",
+      "cold_relief": "穿衣后是否缓解怕冷",
+      "sweating": "出汗情况（无/清汗/黏汗/盗汗）",
+      "infection_exposure": "是否有感冒接触史或外出旅行史",
+
+      // 头痛头晕
+      "headache": "是否头痛(true/false)",
+      "headache_location": "头痛部位",
+      "dizziness": "是否头晕(true/false)",
+      "dizziness_type": "头晕类型",
+      "associated_head_symptoms": "伴随症状（恶心、呕吐、耳鸣等）",
+
+      // 五官症状
+      "eye_symptoms": "是否有眼部不适(true/false)",
+      "eye_status": "眼部症状（干涩、流泪、红肿、畏光）",
+      "ear_symptoms": "是否有耳部不适(true/false)",
+      "ear_status": "耳部症状（耳鸣、耳痛、听力下降）",
+      "nose_symptoms": "是否有鼻部不适(true/false)",
+      "nose_status": "鼻部症状（鼻塞、流涕、嗅觉减退）",
+
+      // 咽喉与咳嗽
+      "throat_symptoms": "是否有咽部不适(true/false)",
+      "throat_type": "咽喉症状（干痛、肿痛、痒、吞咽困难）",
+      "cough": "是否咳嗽(true/false)",
+      "cough_type": "咳嗽类型（干咳、阵发性、持续性）",
+      "cough_duration": "咳嗽持续时间",
+      "phlegm": "是否有痰(true/false)",
+      "phlegm_status": "痰的类型（无痰、白色稀痰、黄色黏痰、带血丝痰）",
+
+      // 食欲饮水
+      "appetite": "是否存在食欲异常(true/false)",
+      "appetite_symptoms": "食欲症状（不振、过剩）",
+      "mouth_symptoms": "口腔相关症状（口苦、口干、反酸）",
+      "drinking_habits": "饮水偏好（冷水/热水）",
+
+      // 大小便与腹痛
+      "urine": "是否关注小便(true/false)",
+      "urine_color": "尿液颜色（正常、偏黄、浑浊、带血）",
+      "bowel": "是否关注大便(true/false)",
+      "bowel_frequency": "大便频率（正常、次数增多、便秘、腹泻）",
+      "bowel_shape": "大便性状（成形、稀水样、硬块、油腻、不成形）",
+      "stool_abnormality": "是否黑便或血便",
+      "abdominal_pain": "是否腹痛（是/否）",
+      "abdominal_pain_location": "腹痛部位",
+      "abdominal_pain_type": "腹痛性质",
+
+      // 睡眠与情绪
+      "sleep_quality": "是否有睡眠问题(true/false)",
+      "sleep_problem_type": "睡眠问题类型（入睡困难、多次醒来、早醒、睡眠良好）",
+      "emotional_state": "情绪状态（平稳、焦虑、抑郁、易怒）",
+
+      // 女性相关
+      "menstrual_cycle": "月经周期（正常/异常）",
+      "menstrual_status": "月经颜色与量（正常/异常）",
+      "dysmenorrhea": "是否痛经(true/false)",
+      "leucorrhea": "白带情况（正常/异常）",
+
+      // 病情补充（仅限一次）
+      "restart": "是否有其他症状(true/false)"
+    };
       
       const relevantFields = fields.filter(field => fieldsDescription[field]);
       
@@ -1352,7 +1559,42 @@ Page({
       } else if (raw.includes('男')) {
         extracted.gender = 'male';
       }
-      console.warn('⚠️ LLM未提取性别，使用正则兜底，结果：', extracted.gender);
+    }
+
+        // --- 新增：根据回答文本做布尔字段兜底判断 ---
+    // 定义布尔字段及关键词映射，用于判断回答中是否出现相关症状
+    const boolFieldKeywords = {
+      fever: ['发烧', '发热', '体温', '热', '发炎'],
+      headache: ['头痛', '头疼', '头晕', '头部痛'],
+      dizziness: ['头晕', '眩晕', '晕眩'],
+      eye_symptoms: ['眼睛不适', '眼睛痛', '干涩', '流泪', '红肿', '畏光'],
+      ear_symptoms: ['耳朵痛', '耳鸣', '听力下降', '耳部不适'],
+      nose_symptoms: ['鼻塞', '流涕', '鼻子不适', '嗅觉减退'],
+      throat_symptoms: ['喉咙痛', '咽喉不适', '干痛', '肿痛', '痒', '吞咽困难'],
+      cough: ['咳嗽', '干咳', '咳痰', '咳'],
+      appetite: ['食欲', '胃口', '吃不下', '食欲不振', '食欲过剩'],
+      urine: ['小便', '尿频', '尿痛'],
+      bowel: ['大便', '便秘', '腹泻', '排便困难', '拉肚子'],
+      sleep_quality: ['睡眠不好', '失眠', '多次醒来', '早醒', '睡眠质量差'],
+    };
+
+    // 文本小写化
+    const answerLower = answer.toLowerCase();
+
+    // 对每个布尔字段，做补充判断
+    for (const [field, keywords] of Object.entries(boolFieldKeywords)) {
+      if (relevantFields.includes(field)) {
+        // 如果LLM没给或者不是明确的布尔值，尝试关键词匹配赋值
+        let val = extracted[field];
+        if (val === undefined || val === null || typeof val !== 'boolean') {
+          // 根据关键词匹配
+          const found = keywords.some(kw => answer.includes(kw) || answerLower.includes(kw));
+          extracted[field] = found;
+        } else {
+          // 尝试确保布尔值
+          extracted[field] = Boolean(val);
+        }
+      }
     }
 
     console.log("📌 提取结构化字段：", extracted);
@@ -1560,8 +1802,10 @@ Page({
       if (this.checkQuestionCondition(nextFollowUp.condition)) {
         await this.addSystemMessage(nextFollowUp.question, true);
         
+        this.setData({ currentFollowUpIndex: nextFollowUpIndex });
+        this.updateCurrentOptions(currentQuestion, nextFollowUpIndex);
+        
         this.setData({
-          currentFollowUpIndex: nextFollowUpIndex,
           isWaitingResponse: false,
           isInputDisabled: false
         });
@@ -1588,6 +1832,41 @@ Page({
       }
     }
     
+    // 特殊跳转：如果当前是B9且选择“是”，直接跳转到A1
+    if (this.data.currentQuestionKey === "B9-病情补充" && this.data.patientData.restart === true) {
+      const nextMainQuestion = this.data.questionTree["A1-基础询问"];
+      await this.addSystemMessage(nextMainQuestion.question, true);
+
+      this.setData({
+        currentQuestionKey: "A1-基础询问",
+        autoVoiceMode: true,
+        useRealtimeASR: this.data.llmConfig.enableRealtimeASR !== false,
+        currentFollowUpIndex: -1
+      });
+      this.updateCurrentOptions(nextMainQuestion, -1);
+
+      this.setData({
+        isWaitingResponse: false,
+        isInputDisabled: false
+      });
+
+      if (!this.data.autoVoiceMode) {
+        setTimeout(() => {
+          this.setData({ inputFocus: true });
+        }, 1000);
+      }
+
+      setTimeout(() => {
+        if (this.data.autoVoiceMode) {
+          this.playVideoAndStartRecording(nextMainQuestion.question);
+        } else {
+          this.playVideoOnly(nextMainQuestion.question);
+        }
+      }, 500);
+
+      return;
+    }
+
     const nextQuestionKey = this.getNextQuestionKey();
     
     if (nextQuestionKey) {
@@ -1598,7 +1877,13 @@ Page({
         
         this.setData({
           currentQuestionKey: nextQuestionKey,
-          currentFollowUpIndex: -1,
+          autoVoiceMode: nextQuestionKey === "A1-基础询问",  // 仅A1环节启用语音输入
+          useRealtimeASR: nextQuestionKey === "A1-基础询问" && this.data.llmConfig.enableRealtimeASR !== false,
+          currentFollowUpIndex: -1
+        });
+        this.updateCurrentOptions(nextMainQuestion, -1);
+        
+        this.setData({
           isWaitingResponse: false,
           isInputDisabled: false
         });
@@ -1623,7 +1908,6 @@ Page({
         });
         await this.processNextQuestion();
       }
-      
     } else {
       await this.finishConsultation();
     }
@@ -2196,85 +2480,94 @@ Page({
           // 重置所有数据
           const initialPatientData = {
             // 基础信息
-            gender: "",                // 性别
-            age: "",                   // 年龄
-            chronic_disease: "",       // 慢性病
-            treatment: "",             // 治疗情况
-            drug_allergy: "",          // 药物过敏
-            
+            gender: "",                  // 性别: "male"/"female"
+            age: "",                     // 年龄
+            chronic_disease: "",         // 慢性疾病
+            treatment: "",               // 是否在治疗
+            drug_allergy: "",            // 药物过敏
+
             // 发热寒热
-            fever: false,              // 是否发热
-            fever_temperature: "",     // 发热温度
-            fever_time: "",            // 发热时间段
-            cold_feeling: false,       // 是否怕冷
-            cold_relief: "",           // 怕冷缓解
-            sweating: false,           // 是否出汗
-            sweat_type: "",            // 汗液类型
-            
+            fever: false,                // 是否发热
+            fever_temperature: "",       // 发热温度
+            fever_duration: "",          // 发热持续时间
+            cold_feeling: false,         // 是否怕冷
+            cold_relief: "",             // 怕冷缓解情况
+            sweating: "",                // 出汗情况: ["无出汗", "清汗", "黏汗", "盗汗"]
+            infection_exposure: "",      // 是否有接触史或旅行史
+
             // 头痛头晕
-            headache: false,           // 是否头痛
-            headache_location: "",     // 头痛部位
-            headache_type: "",         // 头痛类型
-            dizziness: false,          // 是否头晕
-            dizziness_type: "",        // 头晕类型
-            nausea: false,             // 是否恶心
-            
-            // 五官
-            eye_symptoms: "",          // 眼部症状
-            ear_symptoms: "",          // 耳部症状
-            nose_symptoms: "",         // 鼻部症状
-            
+            headache: false,             // 是否头痛
+            headache_location: "",       // 头痛部位
+            dizziness: false,            // 是否头晕
+            dizziness_type: "",          // 头晕类型
+            associated_head_symptoms: [],// 恶心、呕吐、耳鸣等（多选）
+
+            // 五官症状
+            eye_symptoms: false,         // 是否有眼部症状
+            eye_status: [],              // ["干涩", "流泪", "红肿", "畏光"]
+            ear_symptoms: false,         // 是否有耳部症状
+            ear_status: [],              // ["耳鸣", "耳痛", "听力下降"]
+            nose_symptoms: false,        // 是否有鼻部症状
+            nose_status: [],             // ["鼻塞", "流涕", "嗅觉减退"]
+
             // 咽喉与咳嗽
-            throat_symptoms: "",       // 咽部症状
-            cough: false,              // 是否咳嗽
-            cough_type: "",            // 咳嗽类型
-            phlegm: false,             // 是否有痰
-            phlegm_color: "",          // 痰颜色
-            phlegm_texture: "",        // 痰质地
-            phlegm_easy: "",           // 是否易咳出
-            chest_tightness: false,    // 是否胸闷
-            palpitation: false,        // 是否心悸
-            
+            throat_symptoms: false,      // 是否有咽部症状
+            throat_type: "",             // ["干痛", "肿痛", "痒", "吞咽困难"]
+            cough: false,                // 是否咳嗽
+            cough_type: "",              // 咳嗽类型
+            phlegm: false,               // 是否有痰
+            phlegm_status: "",           // 痰的类型
+            cough_duration: "",          // 咳嗽持续时间
+
             // 食欲饮水
-            appetite: "",              // 食欲情况
-            mouth_symptoms: "",        // 口腔症状
-            drinking_habits: "",       // 饮水习惯
-            
+            appetite: false,             // 是否存在食欲问题
+            appetite_symptoms: "",       // ["食欲不振", "食欲过剩"]
+            mouth_symptoms: [],          // ["口苦", "口干", "反酸"]
+            drinking_habits: "",         // ["冷水", "热水"]
+
             // 大小便与腹痛
-            urine_flow: "",            // 小便情况
-            urine_color: "",           // 尿色
-            bowel_frequency: "",       // 大便频率
-            bowel_shape: "",           // 大便性状
-            abdominal_pain: "",        // 腹痛情况
-            
-            // 睡眠情绪
-            sleep_quality: "",         // 睡眠质量
-            mood: "",                  // 情绪状态
-            skin_symptoms: "",         // 皮肤症状
-            
-            // 女性月经
-            menstrual_cycle: "",       // 月经周期
-            menstrual_color: "",       // 月经颜色与量
-            dysmenorrhea: false,       // 是否痛经
-            leucorrhea: ""             // 白带情况
+            urine: false,                // 是否关注小便
+            urine_color: "",             // ["正常", "偏黄", "浑浊", "带血"]
+            bowel: false,                // 是否关注大便
+            bowel_frequency: "",         // ["正常", "次数增多", "便秘", "腹泻"]
+            bowel_shape: "",             // ["成形", "稀水样", "硬块", "油腻", "不成形"]
+            stool_abnormality: "",       // ["无", "黑便", "血便"]
+            abdominal_pain: "",          // ["是", "否"]
+            abdominal_pain_location: "", // 腹痛位置
+            abdominal_pain_type: "",     // 腹痛性质
+
+            // 睡眠与情绪
+            sleep_quality: false,        // 是否有睡眠问题
+            sleep_problem_type: "",      // ["入睡困难", "多次醒来", "早醒", "睡眠良好"]
+            emotional_state: "",         // ["平稳", "焦虑", "抑郁", "易怒"]
+
+            // 女性相关
+            menstrual_cycle: "",         // ["正常", "异常"]
+            menstrual_status: "",        // ["正常", "异常"]，月经颜色与量
+            dysmenorrhea: false,         // 是否痛经
+            leucorrhea: "",              // ["正常", "异常"]
+
+            // 病情补充（仅限一次）
+            restart: false               // 是否有其他症状
           };
           
           const initialRawResponses = {
-            "T1-基础信息": "",
-            "T2-发热寒热": "",
-            "T3-头痛头晕": "",
-            "T4-五官": "",
-            "T5-咽喉与咳嗽": "",
-            "T6-食欲饮水": "",
-            "T7-大小便与腹痛": "",
-            "T8-睡眠情绪": "",
-            "T9-女性月经": ""
+            "A1-基础询问": "",
+            "B1-发热寒热": "",
+            "B2-头痛头晕": "",
+            "B3-咽喉咳嗽": "",
+            "B4-五官": "",
+            "B5-食欲饮水": "",
+            "B6-大小便": "",
+            "B7-睡眠情绪皮肤": "",
+            "B8-女性月经": "",
+            "B9-病情补充": ""
           };
             this.setData({
             messageList: [],
             inputText: "",
             inputFocus: false, // 重置焦点状态
-            currentQuestionKey: "T1-基础信息",
+            currentQuestionKey: "A1-基础询问",
             currentFollowUpIndex: -1,
             isWaitingResponse: false,
             isConsultFinished: false,
